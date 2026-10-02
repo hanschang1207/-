@@ -60,7 +60,7 @@ std::string jsonEscape(const std::string& value) {
     return escaped.str();
 }
 
-std::vector<Guest> loadGuests() {
+std::vector<Guest> loadGuests(int& autoGuestCount) {
     std::vector<Guest> guests;
     std::ifstream input(dataFile, std::ios::binary);
     std::string line;
@@ -71,11 +71,24 @@ std::vector<Guest> loadGuests() {
         std::string phone;
         std::string createdAt;
         std::string called;
-        if (std::getline(row, number, '\t') && std::getline(row, name, '\t') &&
+        if (!std::getline(row, number, '\t')) continue;
+        if (number == "AUTO") {
+            try {
+                if (std::getline(row, name, '\t')) autoGuestCount = std::stoi(name);
+            } catch (const std::exception&) {
+            }
+            continue;
+        }
+        if (std::getline(row, name, '\t') &&
             std::getline(row, phone, '\t') && std::getline(row, createdAt, '\t')) {
             try {
-            std::getline(row, called, '\t');
-            guests.push_back({std::stoi(number), name, phone, std::stoll(createdAt), called == "1"});
+                std::getline(row, called, '\t');
+                guests.push_back({std::stoi(number), name, phone, std::stoll(createdAt), called == "1"});
+                const std::string autoNamePrefix = "\xE8\xB7\xAF\xE4\xBA\xBA";
+                const std::string autoPhonePrefix = "0900-000-";
+                if (name.rfind(autoNamePrefix, 0) == 0 && phone.rfind(autoPhonePrefix, 0) == 0) {
+                    autoGuestCount = std::max(autoGuestCount, std::stoi(phone.substr(autoPhonePrefix.size())));
+                }
             } catch (const std::exception&) {
             }
         }
@@ -83,9 +96,10 @@ std::vector<Guest> loadGuests() {
     return guests;
 }
 
-bool saveGuests(const std::vector<Guest>& guests) {
+bool saveGuests(const std::vector<Guest>& guests, int autoGuestCount) {
     std::ofstream output(dataFile, std::ios::binary | std::ios::trunc);
     if (!output) return false;
+    output << "AUTO\t" << autoGuestCount << '\n';
     for (const Guest& guest : guests) {
         output << guest.number << '\t' << guest.name << '\t' << guest.phone
              << '\t' << guest.createdAt << '\t' << (guest.called ? 1 : 0) << '\n';
@@ -115,6 +129,32 @@ std::string guestJson(const Guest& guest) {
            "\",\"phone\":\"" + jsonEscape(guest.phone) +
            "\",\"createdAt\":" + std::to_string(guest.createdAt) +
            ",\"called\":" + (guest.called ? "true}" : "false}");
+}
+
+int nextGuestNumber(const std::vector<Guest>& guests) {
+    int number = 1;
+    for (const Guest& guest : guests) number = std::max(number, guest.number + 1);
+    return number;
+}
+
+std::string autoGuestName(int autoNumber) {
+    static const char* const suffixes[] = {
+        "\xE7\x94\xB2", "\xE4\xB9\x99", "\xE4\xB8\x99", "\xE4\xB8\x81", "\xE6\x88\x8A",
+        "\xE5\xB7\xB1", "\xE5\xBA\x9A", "\xE8\xBE\x9B", "\xE5\xA3\xAC", "\xE7\x99\xB8"
+    };
+    std::string suffix;
+    while (autoNumber > 0) {
+        const int digit = (autoNumber - 1) % 10;
+        suffix = suffixes[digit] + suffix;
+        autoNumber = (autoNumber - 1) / 10;
+    }
+    return "\xE8\xB7\xAF\xE4\xBA\xBA" + suffix;
+}
+
+std::string autoGuestPhone(int autoNumber) {
+    std::string serial = std::to_string(autoNumber);
+    while (serial.size() < 3) serial.insert(serial.begin(), '0');
+    return "0900-000-" + serial;
 }
 
 std::string urlDecode(const std::string& value) {
@@ -178,7 +218,7 @@ void respond(SOCKET client, int status, const std::string& reason,
     sendAll(client, response.str());
 }
 
-void handleClient(SOCKET client, std::vector<Guest>& guests) {
+void handleClient(SOCKET client, std::vector<Guest>& guests, int& autoGuestCount) {
     std::string request;
     char buffer[4096];
     std::size_t headerEnd = std::string::npos;
@@ -248,13 +288,32 @@ void handleClient(SOCKET client, std::vector<Guest>& guests) {
             return;
         }
         next->called = true;
-        if (!saveGuests(guests)) {
+        if (!saveGuests(guests, autoGuestCount)) {
             next->called = false;
             respond(client, 500, "Internal Server Error", "application/json; charset=utf-8", errorJson("Could not save waitlist"));
             return;
         }
         respond(client, 200, "OK", "application/json; charset=utf-8",
                 "{\"guest\":" + guestJson(*next) + ",\"guests\":" + guestsJson(guests) + "}");
+    } else if (method == "POST" && path == "/api/guests/auto") {
+        const int number = nextGuestNumber(guests);
+        const int autoNumber = ++autoGuestCount;
+        const std::string name = autoGuestName(autoNumber);
+        const std::string phone = autoGuestPhone(autoNumber);
+        const long long now = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        guests.push_back({number, name, phone, now, false});
+        if (!saveGuests(guests, autoGuestCount)) {
+            guests.pop_back();
+            --autoGuestCount;
+            respond(client, 500, "Internal Server Error", "application/json; charset=utf-8", errorJson("Could not save waitlist"));
+            return;
+        }
+        respond(client, 201, "Created", "application/json; charset=utf-8",
+                "{\"number\":" + std::to_string(number) +
+                ",\"name\":\"" + jsonEscape(name) +
+                "\",\"phone\":\"" + jsonEscape(phone) +
+                "\",\"guests\":" + guestsJson(guests) + "}");
     } else if (method == "POST" && path == "/api/guests") {
         const std::string name = trim(formValue(body, "name"));
         const std::string phone = trim(formValue(body, "phone"));
@@ -268,12 +327,11 @@ void handleClient(SOCKET client, std::vector<Guest>& guests) {
             return;
         }
 
-        int nextNumber = 1;
-        for (const Guest& guest : guests) nextNumber = std::max(nextNumber, guest.number + 1);
+        const int nextNumber = nextGuestNumber(guests);
         const long long now = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
         guests.push_back({nextNumber, name, phone, now, false});
-        if (!saveGuests(guests)) {
+        if (!saveGuests(guests, autoGuestCount)) {
             guests.pop_back();
             respond(client, 500, "Internal Server Error", "application/json; charset=utf-8", errorJson("Could not save waitlist"));
             return;
@@ -283,7 +341,7 @@ void handleClient(SOCKET client, std::vector<Guest>& guests) {
     } else if (method == "DELETE" && path == "/api/guests") {
         const std::vector<Guest> previous = guests;
         guests.clear();
-        if (!saveGuests(guests)) {
+        if (!saveGuests(guests, autoGuestCount)) {
             guests = previous;
             respond(client, 500, "Internal Server Error", "application/json; charset=utf-8", errorJson("Could not save waitlist"));
             return;
@@ -300,7 +358,7 @@ void handleClient(SOCKET client, std::vector<Guest>& guests) {
                 respond(client, 404, "Not Found", "application/json; charset=utf-8", errorJson("Guest not found"));
                 return;
             }
-            if (!saveGuests(guests)) {
+            if (!saveGuests(guests, autoGuestCount)) {
                 guests = previous;
                 respond(client, 500, "Internal Server Error", "application/json; charset=utf-8", errorJson("Could not save waitlist"));
                 return;
@@ -356,14 +414,15 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::vector<Guest> guests = loadGuests();
+    int autoGuestCount = 0;
+    std::vector<Guest> guests = loadGuests(autoGuestCount);
     std::cout << "Waitlist server running at http://127.0.0.1:" << port << "/\n"
               << "Press Ctrl+C to stop.\n";
 
     while (true) {
         SOCKET client = accept(server, nullptr, nullptr);
         if (client == INVALID_SOCKET) continue;
-        handleClient(client, guests);
+        handleClient(client, guests, autoGuestCount);
         shutdown(client, SD_SEND);
         closesocket(client);
     }

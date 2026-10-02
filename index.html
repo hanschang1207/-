@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f4f1e8">
-  <title>小滿食堂｜候位登記</title>
+  <title>海大食堂｜候位登記</title>
   <style>
     :root {
       color-scheme: light;
@@ -108,7 +108,7 @@
     h2 { margin: 0; font-family: var(--serif); font-size: 20px; font-weight: 500; }
     .panel-heading span { color: var(--muted); font-size: 12px; }
 
-    .entry-form { display: grid; grid-template-columns: 1fr 1fr auto; align-items: end; gap: 16px; }
+    .entry-form { display: grid; grid-template-columns: 1fr 1fr auto auto; align-items: end; gap: 12px; }
     .field { display: grid; gap: 8px; }
     label { color: #454d45; font-size: 13px; }
 
@@ -140,8 +140,10 @@
 
     .submit-button:hover { background: var(--green-dark); }
     .submit-button:active { transform: translateY(1px); }
+    .auto-add-button { min-height: 46px; padding: 0 16px; border: 1px solid #bdc6b8; border-radius: 3px; background: #fffefa; color: var(--green-dark); cursor: pointer; white-space: nowrap; }
+    .auto-add-button:hover { border-color: var(--green); background: var(--pale-green); }
     .submit-button:focus-visible, .remove-button:focus-visible, .clear-button:focus-visible,
-    .counter-button:focus-visible, .rank-input:focus-visible { outline: 3px solid #c67b55; outline-offset: 3px; }
+    .counter-button:focus-visible, .rank-input:focus-visible, .auto-add-button:focus-visible { outline: 3px solid #c67b55; outline-offset: 3px; }
 
     .counter-panel {
       margin-top: 14px;
@@ -238,7 +240,8 @@
       .heading-note { margin-top: 10px; }
       .entry-panel { padding: 23px 19px; }
       .entry-form { grid-template-columns: 1fr; gap: 14px; }
-      .submit-button { width: 100%; margin-top: 3px; }
+      .submit-button, .auto-add-button { width: 100%; }
+      .submit-button { margin-top: 3px; }
       .counter-panel { padding: 21px 19px; }
       .counter-actions { display: grid; grid-template-columns: 1fr 1fr; }
       .counter-button { width: 100%; padding: 0 9px; }
@@ -262,8 +265,8 @@
 <body>
   <header class="topbar">
     <div class="brand">
-      <span class="brand-mark" aria-hidden="true">小</span>
-      <span class="brand-name">小滿食堂</span>
+      <span class="brand-mark" aria-hidden="true">海</span>
+      <span class="brand-name">海大食堂</span>
       <span class="brand-sub">店務管理</span>
     </div>
     <div class="open-state"><span class="open-dot" aria-hidden="true"></span>今日候位登記</div>
@@ -293,6 +296,7 @@
           <input id="guest-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="例如：0912-345-678" required>
         </div>
         <button class="submit-button" type="submit">確認候位</button>
+        <button class="auto-add-button" id="auto-add-guest" type="button">自動新增</button>
       </form>
       <p class="notice" id="notice" aria-live="polite"></p>
     </section>
@@ -522,6 +526,21 @@
         showNotice(error.message, true);
       } finally {
         submitButton.disabled = false;
+      }
+    });
+
+    document.querySelector("#auto-add-guest").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      try {
+        const result = await api("/api/guests/auto", { method: "POST" });
+        guests = result.guests;
+        renderGuests();
+        showNotice(`已自動新增候位，${result.name}（${result.phone}），候位號碼 #${String(result.number).padStart(3, "0")}。`);
+      } catch (error) {
+        showNotice(error.message, true);
+      } finally {
+        button.disabled = false;
       }
     });
 
