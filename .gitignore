@@ -1,0 +1,13 @@
+# Local guest data may contain names and phone numbers.
+waitlist.tsv
+
+# Generated binaries and compiler output.
+*.exe
+*.o
+*.obj
+*.out
+
+# Editor and operating-system metadata.
+.vscode/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f1e8">
+  <title>小滿食堂｜候位登記</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f4f1e8;
+      --surface: #fffdf8;
+      --ink: #202b24;
+      --muted: #72796f;
+      --line: #d9d9ca;
+      --green: #315c43;
+      --green-dark: #244833;
+      --orange: #bd5738;
+      --pale-green: #e6ecdf;
+      --serif: Georgia, "Noto Serif TC", "Songti TC", serif;
+      --sans: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: radial-gradient(#a49e84 0.55px, transparent 0.55px);
+      background-size: 12px 12px;
+      font-family: var(--sans);
+    }
+
+    button, input { font: inherit; }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 76px;
+      padding: 0 clamp(20px, 6vw, 88px);
+      border-bottom: 1px solid rgba(49, 92, 67, .2);
+      background: rgba(255, 253, 248, .72);
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; }
+
+    .brand-mark {
+      display: grid;
+      width: 36px;
+      aspect-ratio: 1;
+      place-items: center;
+      border: 1px solid var(--green);
+      border-radius: 50%;
+      color: var(--green);
+      font-family: var(--serif);
+      font-size: 19px;
+    }
+
+    .brand-name { font-family: var(--serif); font-size: 18px; }
+    .brand-sub { margin-left: 10px; color: var(--muted); font-size: 12px; }
+
+    .open-state {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--green-dark);
+      font-size: 13px;
+    }
+
+    .open-dot { width: 8px; height: 8px; border-radius: 50%; background: #5d925f; }
+
+    main {
+      width: min(100% - 40px, 1060px);
+      margin: 0 auto;
+      padding: clamp(38px, 7vw, 76px) 0 64px;
+      animation: arrive .45s ease-out both;
+    }
+
+    @keyframes arrive {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .page-heading {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 34px;
+    }
+
+    .eyebrow { margin: 0 0 10px; color: var(--orange); font-size: 12px; letter-spacing: 0; }
+    h1 { margin: 0; font-family: var(--serif); font-size: clamp(30px, 5vw, 42px); font-weight: 500; }
+    .heading-note { margin: 0 0 4px; color: var(--muted); font-size: 13px; }
+
+    .entry-panel {
+      padding: 27px 30px 30px;
+      border: 1px solid var(--line);
+      border-top: 3px solid var(--green);
+      background: var(--surface);
+      box-shadow: 0 10px 30px rgba(44, 54, 38, .045);
+    }
+
+    .panel-heading { display: flex; align-items: baseline; gap: 12px; margin-bottom: 22px; }
+    h2 { margin: 0; font-family: var(--serif); font-size: 20px; font-weight: 500; }
+    .panel-heading span { color: var(--muted); font-size: 12px; }
+
+    .entry-form { display: grid; grid-template-columns: 1fr 1fr auto; align-items: end; gap: 16px; }
+    .field { display: grid; gap: 8px; }
+    label { color: #454d45; font-size: 13px; }
+
+    input {
+      width: 100%;
+      min-height: 46px;
+      padding: 0 13px;
+      border: 1px solid #c9cbbd;
+      border-radius: 3px;
+      outline: none;
+      background: #fffefa;
+      color: var(--ink);
+    }
+
+    input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(49, 92, 67, .12); }
+    input::placeholder { color: #a1a398; }
+
+    .submit-button {
+      min-height: 46px;
+      padding: 0 23px;
+      border: 0;
+      border-radius: 3px;
+      background: var(--green);
+      color: white;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .15s ease, transform .15s ease;
+    }
+
+    .submit-button:hover { background: var(--green-dark); }
+    .submit-button:active { transform: translateY(1px); }
+    .submit-button:focus-visible, .remove-button:focus-visible, .clear-button:focus-visible,
+    .counter-button:focus-visible, .rank-input:focus-visible { outline: 3px solid #c67b55; outline-offset: 3px; }
+
+    .counter-panel {
+      margin-top: 14px;
+      padding: 23px 30px 25px;
+      border: 1px solid var(--line);
+      background: rgba(255, 253, 248, .88);
+    }
+
+    .counter-panel .panel-heading { margin-bottom: 16px; }
+    .counter-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .counter-button {
+      min-height: 42px;
+      padding: 0 16px;
+      border: 1px solid #bdc6b8;
+      border-radius: 3px;
+      background: #fffefa;
+      color: var(--green-dark);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .counter-button:hover { border-color: var(--green); background: var(--pale-green); }
+    .counter-button.primary { border-color: var(--green); background: var(--green); color: white; }
+    .counter-button.primary:hover { background: var(--green-dark); }
+    .counter-button.danger { border-color: #d5b8aa; color: #924b37; }
+    .counter-button.danger:hover { border-color: var(--orange); background: #fbf0eb; }
+    .rank-form { display: flex; align-items: center; gap: 8px; }
+    .rank-input { width: 190px; min-height: 42px; }
+    .counter-notice { min-height: 20px; margin: 12px 0 0; color: var(--green-dark); font-size: 12px; }
+    .counter-notice.error { color: #a33f2c; }
+    .status-cell { color: var(--muted); font-size: 12px; }
+    .called-status { color: var(--orange); }
+
+    .queue-summary {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .queue-summary-heading { padding: 18px 22px 12px; }
+    .queue-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .queue-metric { min-width: 0; padding: 17px 22px 20px; border-top: 1px solid var(--line); }
+    .queue-metric + .queue-metric { border-left: 1px solid var(--line); }
+    .queue-metric-label { display: block; margin-bottom: 11px; color: var(--muted); font-size: 12px; }
+    .queue-metric-value { display: block; color: var(--green-dark); font-family: var(--serif); font-size: 23px; line-height: 1.3; overflow-wrap: anywhere; }
+    .queue-metric-detail { display: block; margin-top: 6px; color: #62695f; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+    .queue-metric.called .queue-metric-value { color: var(--orange); }
+    .queue-lane { display: grid; grid-template-columns: 112px minmax(0, 1fr) 112px; border-top: 1px solid var(--line); }
+    .queue-lane-endpoint { display: grid; min-height: 88px; place-items: center; background: var(--pale-green); color: var(--green-dark); font-family: var(--serif); font-size: 17px; }
+    .queue-lane-endpoint.entrance { background: #f5e8df; color: #855444; }
+    .queue-lane-center { min-width: 0; padding: 13px 16px; }
+    .queue-lane-title { display: block; margin-bottom: 10px; color: var(--muted); font-size: 11px; }
+    .queue-line { display: flex; min-height: 38px; align-items: center; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+    .queue-person { display: grid; flex: 0 0 auto; gap: 3px; padding: 7px 10px; border: 1px solid #bdc6b8; border-radius: 3px; background: #fffefa; color: var(--ink); font-size: 12px; white-space: nowrap; }
+    .queue-person-number { margin-right: 5px; color: var(--orange); font-family: var(--serif); }
+    .queue-person-phone { color: var(--muted); font-size: 11px; }
+    .queue-empty { color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+    .list-section { margin-top: 48px; }
+    .list-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 15px; }
+    .list-title { display: flex; align-items: baseline; gap: 12px; }
+    .count { color: var(--orange); font-family: var(--serif); font-size: 17px; }
+
+    .clear-button {
+      padding: 7px 0;
+      border: 0;
+      background: none;
+      color: #855444;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .clear-button:hover { color: var(--orange); text-decoration: underline; }
+    .table-wrap { overflow-x: auto; border-top: 1px solid var(--ink); }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { padding: 13px 12px; color: var(--muted); font-size: 11px; font-weight: 500; white-space: nowrap; }
+    td { padding: 15px 12px; border-top: 1px solid var(--line); font-size: 13px; }
+    tbody tr { animation: arrive .2s ease-out both; }
+    .queue-number { color: var(--orange); font-family: var(--serif); font-size: 15px; }
+    .phone-cell, .time-cell { color: #62695f; }
+    .remove-button { padding: 6px 8px; border: 1px solid var(--line); border-radius: 3px; background: transparent; color: #62695f; cursor: pointer; font-size: 12px; }
+    .remove-button:hover { border-color: #bd8f7e; color: var(--orange); }
+
+    .empty-state { padding: 33px 12px; border-top: 1px solid var(--line); color: var(--muted); text-align: center; font-size: 13px; }
+    .notice { min-height: 20px; margin: 12px 0 0; color: var(--green-dark); font-size: 12px; }
+    .notice.error { color: #a33f2c; }
+    footer { margin-top: 58px; padding-top: 16px; border-top: 1px solid rgba(49, 92, 67, .2); color: var(--muted); font-size: 11px; }
+
+    @media (max-width: 720px) {
+      .topbar { min-height: 66px; padding: 0 20px; }
+      .brand-sub { display: none; }
+      main { width: min(100% - 32px, 560px); padding-top: 39px; }
+      .page-heading { display: block; margin-bottom: 25px; }
+      .heading-note { margin-top: 10px; }
+      .entry-panel { padding: 23px 19px; }
+      .entry-form { grid-template-columns: 1fr; gap: 14px; }
+      .submit-button { width: 100%; margin-top: 3px; }
+      .counter-panel { padding: 21px 19px; }
+      .counter-actions { display: grid; grid-template-columns: 1fr 1fr; }
+      .counter-button { width: 100%; padding: 0 9px; }
+      .rank-form { grid-column: 1 / -1; }
+      .rank-input { width: 100%; min-width: 0; flex: 1 1 auto; }
+      .rank-form .counter-button { width: auto; flex: 0 0 auto; }
+      .queue-summary-heading { padding: 17px 19px 11px; }
+      .queue-summary-grid { grid-template-columns: 1fr; }
+      .queue-metric { padding: 15px 19px; }
+      .queue-metric + .queue-metric { border-left: 0; }
+      .queue-lane { grid-template-columns: 62px minmax(0, 1fr) 62px; }
+      .queue-lane-endpoint { min-height: 82px; font-size: 14px; }
+      .queue-lane-center { padding: 12px 10px; }
+      .queue-line { gap: 6px; }
+      .queue-person { padding: 7px 8px; font-size: 11px; }
+      .list-section { margin-top: 38px; }
+      th, td { padding-right: 10px; padding-left: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">小</span>
+      <span class="brand-name">小滿食堂</span>
+      <span class="brand-sub">店務管理</span>
+    </div>
+    <div class="open-state"><span class="open-dot" aria-hidden="true"></span>今日候位登記</div>
+  </header>
+
+  <main>
+    <section class="page-heading" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">WAITLIST / 01</p>
+        <h1 id="page-title">候位登記</h1>
+      </div>
+      <p class="heading-note">依登記順序安排入座</p>
+    </section>
+
+    <section class="entry-panel" aria-labelledby="entry-title">
+      <div class="panel-heading">
+        <h2 id="entry-title">新增候位</h2>
+        <span>請填寫候位者資料</span>
+      </div>
+      <form class="entry-form" id="waitlist-form">
+        <div class="field">
+          <label for="guest-name">候位者名稱</label>
+          <input id="guest-name" name="name" type="text" autocomplete="name" maxlength="40" placeholder="例如：林小姐" required>
+        </div>
+        <div class="field">
+          <label for="guest-phone">電話號碼</label>
+          <input id="guest-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="例如：0912-345-678" required>
+        </div>
+        <button class="submit-button" type="submit">確認候位</button>
+      </form>
+      <p class="notice" id="notice" aria-live="polite"></p>
+    </section>
+
+    <section class="counter-panel" aria-labelledby="counter-title">
+      <div class="panel-heading">
+        <h2 id="counter-title">櫃台</h2>
+        <span>候位現場操作</span>
+      </div>
+      <div class="counter-actions">
+        <button class="counter-button primary" id="call-next" type="button">叫下一位</button>
+        <button class="counter-button" id="preview-next" type="button">看下一位</button>
+        <button class="counter-button" id="show-waitlist" type="button">候位名單</button>
+        <form class="rank-form" id="rank-form">
+          <input class="rank-input" id="rank-query" type="search" maxlength="40" aria-label="輸入候位者姓名或電話查順位" placeholder="輸入姓名或電話">
+          <button class="counter-button" type="submit">查順位</button>
+        </form>
+        <button class="counter-button danger" id="closing-clear" type="button">打烊清空</button>
+      </div>
+      <p class="counter-notice" id="counter-notice" aria-live="polite"></p>
+    </section>
+
+    <section class="queue-summary" aria-labelledby="queue-summary-title">
+      <div class="queue-summary-heading">
+        <h2 id="queue-summary-title">候位隊伍</h2>
+      </div>
+      <div class="queue-summary-grid" aria-live="polite">
+        <div class="queue-metric called">
+          <span class="queue-metric-label">目前叫號</span>
+          <strong class="queue-metric-value" id="current-called-number">尚未叫號</strong>
+          <span class="queue-metric-detail" id="current-called-detail"></span>
+        </div>
+        <div class="queue-metric">
+          <span class="queue-metric-label">下一位</span>
+          <strong class="queue-metric-value" id="next-guest-number">目前無下一位</strong>
+          <span class="queue-metric-detail" id="next-guest-detail"></span>
+        </div>
+        <div class="queue-metric">
+          <span class="queue-metric-label">候位組數</span>
+          <strong class="queue-metric-value" id="waiting-count">0 組</strong>
+          <span class="queue-metric-detail">尚未叫號</span>
+        </div>
+      </div>
+      <div class="queue-lane" aria-label="候位隊伍位置示意">
+        <div class="queue-lane-endpoint">櫃台</div>
+        <div class="queue-lane-center">
+          <span class="queue-lane-title">目前排隊者（依序）</span>
+          <div class="queue-line" id="queue-line" aria-live="polite"></div>
+        </div>
+        <div class="queue-lane-endpoint entrance">入口</div>
+      </div>
+    </section>
+
+    <section class="list-section" aria-labelledby="list-title">
+      <div class="list-heading">
+        <div class="list-title">
+          <h2 id="list-title">目前候位</h2>
+          <span class="count" id="guest-count">0 位</span>
+        </div>
+      </div>
+      <div id="list-content"></div>
+    </section>
+
+    <footer>候位資料由本機 C++ 服務管理，並保存於 waitlist.tsv。</footer>
+  </main>
+
+  <script>
+    const form = document.querySelector("#waitlist-form");
+    const listContent = document.querySelector("#list-content");
+    const guestCount = document.querySelector("#guest-count");
+    const notice = document.querySelector("#notice");
+    const counterNotice = document.querySelector("#counter-notice");
+    const closingClearButton = document.querySelector("#closing-clear");
+
+    let guests = [];
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", ...options.headers }
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "服務暫時無法處理請求。");
+      return result;
+    }
+
+    function showNotice(message, isError = false) {
+      notice.textContent = message;
+      notice.classList.toggle("error", isError);
+    }
+
+    function showCounterNotice(message, isError = false) {
+      counterNotice.textContent = message;
+      counterNotice.classList.toggle("error", isError);
+    }
+
+    function makeCell(text, className = "") {
+      const cell = document.createElement("td");
+      cell.textContent = text;
+      if (className) cell.className = className;
+      return cell;
+    }
+
+    function renderGuests() {
+      guestCount.textContent = `${guests.length} 位`;
+      renderQueueSummary();
+      if (guests.length === 0) {
+        listContent.innerHTML = '<div class="empty-state">目前尚無候位資料</div>';
+        return;
+      }
+
+      const table = document.createElement("table");
+      table.innerHTML = "<thead><tr><th>候位號碼</th><th>候位者</th><th>電話</th><th>登記時間</th><th>狀態</th><th>操作</th></tr></thead>";
+      const body = document.createElement("tbody");
+
+      guests.forEach((guest, index) => {
+        const row = document.createElement("tr");
+        row.append(
+          makeCell(`#${String(guest.number).padStart(3, "0")}`, "queue-number"),
+          makeCell(guest.name),
+          makeCell(guest.phone, "phone-cell"),
+          makeCell(new Date(guest.createdAt).toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" }), "time-cell"),
+          makeCell(guest.called ? "已叫號" : "等候中", guest.called ? "status-cell called-status" : "status-cell")
+        );
+        const action = document.createElement("td");
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "remove-button";
+        remove.textContent = "完成";
+        remove.setAttribute("aria-label", `移除 ${guest.name} 的候位資料`);
+        remove.addEventListener("click", async () => {
+          remove.disabled = true;
+          try {
+            guests = await api(`/api/guests/${guest.number}`, { method: "DELETE" });
+            renderGuests();
+            showNotice(`已移除 ${guest.name} 的候位資料。`);
+          } catch (error) {
+            remove.disabled = false;
+            showNotice(error.message, true);
+          }
+        });
+        action.append(remove);
+        row.append(action);
+        body.append(row);
+      });
+
+      table.append(body);
+      const wrapper = document.createElement("div");
+      wrapper.className = "table-wrap";
+      wrapper.append(table);
+      listContent.replaceChildren(wrapper);
+    }
+
+    function renderQueueSummary() {
+      const currentCalled = [...guests].reverse().find((guest) => guest.called);
+      const waitingGuests = guests.filter((guest) => !guest.called);
+      const nextGuest = waitingGuests[0];
+
+      document.querySelector("#current-called-number").textContent = currentCalled
+        ? `#${String(currentCalled.number).padStart(3, "0")}`
+        : "尚未叫號";
+      document.querySelector("#current-called-detail").textContent = currentCalled
+        ? `${currentCalled.name}，請入座。`
+        : "";
+
+      document.querySelector("#next-guest-number").textContent = nextGuest
+        ? `#${String(nextGuest.number).padStart(3, "0")}`
+        : "目前無下一位";
+      document.querySelector("#next-guest-detail").textContent = nextGuest ? nextGuest.name : "";
+      document.querySelector("#waiting-count").textContent = `${waitingGuests.length} 組`;
+
+      const queueLine = document.querySelector("#queue-line");
+      queueLine.replaceChildren();
+      if (waitingGuests.length === 0) {
+        const empty = document.createElement("span");
+        empty.className = "queue-empty";
+        empty.textContent = "目前沒有排隊者";
+        queueLine.append(empty);
+        return;
+      }
+
+      waitingGuests.forEach((guest) => {
+        const person = document.createElement("span");
+        person.className = "queue-person";
+        const number = document.createElement("span");
+        number.className = "queue-person-number";
+        number.textContent = `#${String(guest.number).padStart(3, "0")}`;
+        const name = document.createElement("span");
+        name.append(number, document.createTextNode(guest.name));
+        const phone = document.createElement("span");
+        phone.className = "queue-person-phone";
+        phone.textContent = guest.phone;
+        person.append(name, phone);
+        queueLine.append(person);
+      });
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const formData = new FormData(form);
+      const name = String(formData.get("name")).trim();
+      const phone = String(formData.get("phone")).trim();
+      const digits = phone.replace(/\D/g, "");
+
+      if (!name) {
+        showNotice("請填寫候位者名稱。", true);
+        return;
+      }
+      if (digits.length < 8 || digits.length > 15) {
+        showNotice("請輸入有效的電話號碼（8 至 15 位數字）。", true);
+        return;
+      }
+
+      const submitButton = form.querySelector("button[type='submit']");
+      submitButton.disabled = true;
+      try {
+        const result = await api("/api/guests", {
+          method: "POST",
+          body: new URLSearchParams({ name, phone }).toString()
+        });
+        guests = result.guests;
+        renderGuests();
+        form.reset();
+        document.querySelector("#guest-name").focus();
+        showNotice(`已完成候位登記，${name} 的候位號碼是 #${String(result.number).padStart(3, "0")}。`);
+      } catch (error) {
+        showNotice(error.message, true);
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+
+    document.querySelector("#preview-next").addEventListener("click", async () => {
+      try {
+        const guest = await api("/api/guests/next");
+        showCounterNotice(guest
+          ? `下一位：${guest.name}（候位號碼 #${String(guest.number).padStart(3, "0")}，${guest.phone}）`
+          : "目前沒有尚未叫號的候位者。");
+      } catch (error) {
+        showCounterNotice(error.message, true);
+      }
+    });
+
+    document.querySelector("#call-next").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      try {
+        const result = await api("/api/guests/call-next", { method: "POST" });
+        guests = result.guests;
+        renderGuests();
+        showCounterNotice(result.guest
+          ? `已叫號：${result.guest.name}（候位號碼 #${String(result.guest.number).padStart(3, "0")}）`
+          : "目前沒有尚未叫號的候位者。");
+      } catch (error) {
+        showCounterNotice(error.message, true);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    document.querySelector("#show-waitlist").addEventListener("click", () => {
+      document.querySelector("#list-title").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    document.querySelector("#rank-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const query = document.querySelector("#rank-query").value.trim();
+      if (!query) {
+        showCounterNotice("請輸入候位者姓名或電話。", true);
+        return;
+      }
+
+      const phoneQuery = query.replace(/\D/g, "");
+      const index = guests.findIndex((guest) => {
+        const nameMatches = guest.name.includes(query);
+        const phoneMatches = phoneQuery.length > 0 && guest.phone.replace(/\D/g, "").includes(phoneQuery);
+        return nameMatches || phoneMatches;
+      });
+      if (index === -1) {
+        showCounterNotice("找不到符合的候位資料。", true);
+        return;
+      }
+
+      const guest = guests[index];
+      showCounterNotice(`${guest.name} 目前排第 ${index + 1} 位（候位號碼 #${String(guest.number).padStart(3, "0")}，${guest.called ? "已叫號" : "等候中"}）。`);
+    });
+
+    closingClearButton.addEventListener("click", async () => {
+      if (guests.length === 0) return;
+      if (!window.confirm("打烊清空會刪除所有候位資料，確定繼續嗎？")) return;
+      closingClearButton.disabled = true;
+      try {
+        guests = await api("/api/guests", { method: "DELETE" });
+        renderGuests();
+        showCounterNotice("已清空候位名單。");
+      } catch (error) {
+        showCounterNotice(error.message, true);
+      } finally {
+        closingClearButton.disabled = false;
+      }
+    });
+
+    api("/api/guests")
+      .then((savedGuests) => {
+        guests = savedGuests;
+        renderGuests();
+      })
+      .catch((error) => {
+        renderGuests();
+        showNotice(`${error.message} 請確認候位服務正在執行。`, true);
+      });
+  </script>
+</body>
+</html>
