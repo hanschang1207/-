@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f2f4ed">
+  <title>Hash Lab｜雜湊表</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f2f4ed;
+      --surface: #fffefa;
+      --ink: #182b2c;
+      --muted: #647475;
+      --line: #d8dfd8;
+      --teal: #176b63;
+      --teal-dark: #10534e;
+      --orange: #d3653e;
+      --sans: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      --serif: "Iowan Old Style", "Noto Serif TC", "Songti TC", serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: var(--sans);
+      background-color: var(--paper);
+      background-image: linear-gradient(rgba(255,255,255,.42) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.42) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible { outline: 3px solid rgba(211,101,62,.48); outline-offset: 2px; }
+    .topbar {
+      min-height: 70px;
+      padding: 0 clamp(20px, 5vw, 72px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,254,250,.82);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border: 1px solid var(--teal);
+      color: var(--teal);
+      font: 17px var(--serif);
+    }
+    .brand-title { font: 17px var(--serif); }
+    .brand-meta { color: var(--muted); font-size: 11px; letter-spacing: 1px; }
+    .top-status { display: flex; align-items: center; gap: 8px; color: var(--teal-dark); font-size: 12px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #58a27b; box-shadow: 0 0 0 4px #e4f1e9; }
+    main { width: min(100% - 40px, 1320px); margin: auto; padding: 42px 0 60px; animation: enter .45s ease-out both; }
+    @keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .intro { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 25px; }
+    .eyebrow { margin: 0 0 8px; color: var(--orange); font-size: 11px; letter-spacing: 1.5px; }
+    h1 { margin: 0; font: 500 36px/1.2 var(--serif); }
+    .intro-note { max-width: 430px; margin: 0 0 3px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+    .control-panel, .method-panel { border: 1px solid var(--line); background: var(--surface); }
+    .control-panel { margin-bottom: 16px; }
+    .control-grid { display: grid; grid-template-columns: minmax(240px, 1fr) auto; align-items: end; gap: 20px; padding: 19px 22px; }
+    .section-label { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+    .section-label strong { font: 500 16px var(--serif); }
+    .section-label span, .field-hint { color: var(--muted); font-size: 11px; }
+    .number-input { width: 100%; min-height: 43px; padding: 0 12px; border: 1px solid #c9d3ce; border-radius: 2px; background: #fff; color: var(--ink); }
+    .field-hint { margin: 7px 0 0; line-height: 1.6; }
+    .control-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .button { min-height: 40px; padding: 0 13px; border: 1px solid #cbd6d0; border-radius: 2px; background: #fffefa; color: var(--teal-dark); font-size: 12px; transition: background .15s, border-color .15s, transform .15s; }
+    .button:hover:not(:disabled) { border-color: var(--teal); background: #edf5f0; }
+    .button:active:not(:disabled) { transform: translateY(1px); }
+    .button:disabled { cursor: not-allowed; opacity: .42; }
+    .button.primary { border-color: var(--teal); background: var(--teal); color: white; }
+    .button.primary:hover:not(:disabled) { background: var(--teal-dark); }
+    .input-error { min-height: 16px; margin: 6px 0 0; color: #b1462a; font-size: 11px; }
+    .progress-section { padding: 14px 22px 17px; border-top: 1px solid var(--line); }
+    .progress-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .progress-top strong { font: 500 14px var(--serif); }
+    .step-count { color: var(--muted); font-size: 10px; letter-spacing: .5px; }
+    .sequence { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .sequence-chip { min-width: 28px; padding: 5px 8px; border: 1px solid var(--line); background: #f7f8f3; text-align: center; font: 12px var(--serif); overflow-wrap: anywhere; }
+    .sequence-chip.done { border-color: #a9c8bd; background: #edf5f0; }
+    .sequence-chip.current { border-color: #e9a88f; background: #fcf0e9; color: #94492f; }
+    .sequence-chip.pending { color: #899492; }
+    .sequence-empty { color: #94a09d; font-size: 11px; }
+    .progress-track { height: 3px; margin-top: 12px; background: #e8ece7; }
+    .progress-fill { height: 100%; width: 0; background: var(--orange); transition: width .2s ease; }
+    .method-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+    .method-panel { min-width: 0; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 62px; padding: 0 20px; border-bottom: 1px solid var(--line); }
+    h2 { margin: 0; font: 500 18px var(--serif); }
+    .panel-kicker { color: var(--muted); font-size: 10px; }
+    .table-wrap { padding: 16px 18px; }
+    .bucket-list { display: grid; gap: 6px; }
+    .bucket-row { display: grid; grid-template-columns: 45px minmax(0, 1fr); min-height: 38px; border: 1px solid var(--line); background: #fffefa; }
+    .bucket-index { display: grid; place-items: center; border-right: 1px solid var(--line); background: #f4f6f1; color: var(--muted); font-size: 11px; }
+    .bucket-values { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; min-width: 0; padding: 5px 8px; }
+    .bucket-row.active .bucket-index { background: #fcf0e9; color: #94492f; }
+    .bucket-row.active { border-color: #e9a88f; }
+    .bucket-row.probed { border-color: #a9c8bd; }
+    .bucket-row.probed .bucket-index { background: #edf5f0; color: var(--teal-dark); }
+    .bucket-empty { color: #a0aaa5; font-size: 10px; }
+    .value-chip { display: inline-flex; align-items: center; min-height: 23px; padding: 2px 7px; border: 1px solid #b8ccc2; background: #edf5f0; color: var(--teal-dark); font: 12px var(--serif); overflow-wrap: anywhere; }
+    .value-chip.newest { border-color: var(--orange); background: #fcf0e9; color: #94492f; }
+    .chain-link { color: var(--orange); font-size: 13px; font-weight: 600; }
+    .chain-end { color: var(--muted); font: 10px var(--sans); }
+    .method-note { margin: 0 18px 15px; padding: 11px 12px; border-left: 3px solid #9bb9bb; background: #edf4f2; color: #526767; font-size: 11px; line-height: 1.7; }
+    .method-note strong { display: block; margin-bottom: 3px; color: var(--ink); font: 500 13px var(--serif); }
+    .detail-panel { min-height: 116px; padding: 14px 18px 17px; border-top: 1px solid var(--line); }
+    .detail-panel h3 { margin: 0 0 8px; font: 500 14px var(--serif); }
+    .detail-list { display: grid; gap: 6px; }
+    .detail-row { display: grid; grid-template-columns: minmax(45px, auto) minmax(0, 1fr); gap: 9px; align-items: start; font-size: 11px; line-height: 1.65; }
+    .detail-key { color: var(--teal-dark); font-weight: 600; }
+    .detail-text { min-width: 0; color: #526767; overflow-wrap: anywhere; }
+    .empty-detail { color: var(--muted); font-size: 11px; line-height: 1.7; }
+    .value-chip.search-visited { border-color: #8bb0be; background: #e8f2f5; color: #315d69; }
+    .value-chip.search-current { border-color: var(--orange); background: #fcf0e9; color: #94492f; box-shadow: 0 0 0 2px rgba(211,101,62,.12); }
+    .bucket-row.search-visited { border-color: #8bb0be; }
+    .bucket-row.search-visited .bucket-index { background: #e8f2f5; color: #315d69; }
+    .bucket-row.search-current { border-color: var(--orange); box-shadow: inset 0 0 0 1px rgba(211,101,62,.12); }
+    .bucket-row.search-current .bucket-index { background: #fcf0e9; color: #94492f; }
+    .search-panel { margin-top: 16px; border: 1px solid var(--line); background: var(--surface); }
+    .search-form { display: grid; grid-template-columns: minmax(200px, 1fr) auto; align-items: end; gap: 16px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+    .search-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .search-method { min-width: 0; }
+    .search-method + .search-method { border-left: 1px solid var(--line); }
+    .search-controls { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+    .search-status { margin: 0 0 10px; color: var(--teal-dark); font: 500 14px var(--serif); }
+    .search-status.miss { color: #94492f; }
+    .search-help { margin: 7px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+    .footer-note { margin: 14px 2px 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+    @media (max-width: 780px) {
+      main { padding-top: 30px; }
+      .intro { display: block; }
+      .intro-note { margin-top: 12px; }
+      .control-grid { grid-template-columns: 1fr; }
+      .control-actions .button { flex: 1; }
+      .method-grid { grid-template-columns: 1fr; }
+      .search-methods { grid-template-columns: 1fr; }
+      .search-method + .search-method { border-top: 1px solid var(--line); border-left: 0; }
+    }
+    @media (max-width: 430px) {
+      main { width: min(100% - 24px, 1320px); }
+      h1 { font-size: 30px; }
+      .topbar { padding: 0 14px; }
+      .brand-meta { display: none; }
+      .control-grid, .progress-section { padding-right: 14px; padding-left: 14px; }
+      .panel-head { padding: 0 14px; }
+      .table-wrap { padding: 12px; }
+      .method-note { margin-right: 12px; margin-left: 12px; }
+      .detail-panel { padding-right: 12px; padding-left: 12px; }
+      .search-form { grid-template-columns: 1fr; padding-right: 14px; padding-left: 14px; }
+      .search-form .control-actions .button { flex: 1; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">H</span>
+      <div>
+        <div class="brand-title">Hash Lab</div>
+        <div class="brand-meta">DATA STRUCTURE VISUALIZER</div>
+      </div>
+    </div>
+    <div class="top-status"><span class="status-dot" aria-hidden="true"></span>互動演示</div>
+  </header>
+
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">資料結構・碰撞處理</p>
+        <h1 id="page-title">雜湊表，逐步看懂</h1>
+      </div>
+      <p class="intro-note">輸入數字或字元，觀察相同的雜湊位置遇到碰撞時，連結法與開啟定址如何分別安置資料。</p>
+    </section>
+
+    <section class="control-panel" aria-label="輸入與步驟控制">
+      <form id="input-form" class="control-grid">
+        <div>
+          <label class="section-label" for="value-input">
+            <strong>輸入待分類資料</strong>
+            <span>最多 8 個項目</span>
+          </label>
+          <input id="value-input" class="number-input" type="text" autocomplete="off" placeholder="例如：12, 20, 28, A, B">
+          <p class="field-hint">以逗號、空白或換行分隔；整數用餘數取址，字元／字串以 Unicode 碼點總和取址。</p>
+          <p id="input-error" class="input-error" role="alert"></p>
+        </div>
+        <div class="control-actions">
+          <button class="button primary" type="submit">開始演示</button>
+          <button id="example-button" class="button" type="button">載入範例</button>
+          <button id="clear-button" class="button" type="button" disabled>清除</button>
+        </div>
+      </form>
+      <div class="progress-section">
+        <div class="progress-top">
+          <strong id="step-title">準備輸入資料</strong>
+          <span id="step-count" class="step-count">STEP 0 / 0</span>
+        </div>
+        <div id="sequence" class="sequence" aria-label="輸入順序"></div>
+        <div class="progress-track" role="progressbar" aria-label="演示進度" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+        <div class="control-actions" style="margin-top: 12px">
+          <button id="previous-button" class="button" type="button" disabled>上一步</button>
+          <button id="next-button" class="button primary" type="button" disabled>下一步</button>
+          <button id="restart-button" class="button" type="button" disabled>從頭播放</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="method-grid" aria-label="雜湊碰撞處理方法比較">
+      <article class="method-panel" aria-labelledby="chaining-title">
+        <header class="panel-head">
+          <h2 id="chaining-title">01・連結法</h2>
+          <span class="panel-kicker">SEPARATE CHAINING</span>
+        </header>
+        <div class="table-wrap">
+          <div id="chain-table" class="bucket-list" aria-label="連結法雜湊表"></div>
+        </div>
+        <div class="method-note">
+          <strong>同一格串成一條鏈</strong>
+          發生碰撞時，資料仍放在計算出的索引，並以箭頭連到下一個節點；「∅」表示鏈結結束。
+        </div>
+        <section class="detail-panel" aria-live="polite">
+          <h3>本步分類過程</h3>
+          <div id="chain-detail" class="detail-list"></div>
+        </section>
+      </article>
+
+      <article class="method-panel" aria-labelledby="probing-title">
+        <header class="panel-head">
+          <h2 id="probing-title">02・開啟定址</h2>
+          <span class="panel-kicker">LINEAR PROBING</span>
+        </header>
+        <div class="table-wrap">
+          <div id="open-table" class="bucket-list" aria-label="開啟定址雜湊表"></div>
+        </div>
+        <div class="method-note">
+          <strong>沿著表格尋找下一個空位</strong>
+          發生碰撞時依序檢查下一格；到達最後一格會繞回索引 0。此處使用線性探測法。
+        </div>
+        <section class="detail-panel" aria-live="polite">
+          <h3>本步分類過程</h3>
+          <div id="open-detail" class="detail-list"></div>
+        </section>
+      </article>
+    </section>
+
+    <section class="search-panel" aria-labelledby="search-title">
+      <header class="panel-head">
+        <h2 id="search-title">03・檢索演示</h2>
+        <span class="panel-kicker">LOOKUP</span>
+      </header>
+      <form id="search-form" class="search-form">
+        <div>
+          <label class="section-label" for="search-input">
+            <strong>要檢索的項目</strong>
+            <span>一次一個項目</span>
+          </label>
+          <input id="search-input" class="number-input" type="text" autocomplete="off" placeholder="例如：20 或 A" disabled>
+          <p id="search-hint" class="search-help">請先完成上方所有資料的分類。</p>
+          <p id="search-error" class="input-error" role="alert"></p>
+        </div>
+        <div class="control-actions">
+          <button id="search-start" class="button primary" type="submit" disabled>開始檢索</button>
+        </div>
+      </form>
+      <div class="search-methods">
+        <section class="detail-panel search-method" aria-labelledby="chain-search-title" aria-live="polite">
+          <h3 id="chain-search-title">連結法檢索</h3>
+          <p id="chain-search-status" class="search-status">等待分類完成</p>
+          <div id="chain-search-detail" class="detail-list"></div>
+          <div class="search-controls">
+            <button id="chain-search-previous" class="button" type="button" disabled>上一步</button>
+            <button id="chain-search-next" class="button primary" type="button" disabled>下一步</button>
+            <button id="chain-search-restart" class="button" type="button" disabled>重新檢索</button>
+          </div>
+        </section>
+        <section class="detail-panel search-method" aria-labelledby="open-search-title" aria-live="polite">
+          <h3 id="open-search-title">開啟定址檢索</h3>
+          <p id="open-search-status" class="search-status">等待分類完成</p>
+          <div id="open-search-detail" class="detail-list"></div>
+          <div class="search-controls">
+            <button id="open-search-previous" class="button" type="button" disabled>上一步</button>
+            <button id="open-search-next" class="button primary" type="button" disabled>下一步</button>
+            <button id="open-search-restart" class="button" type="button" disabled>重新檢索</button>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <p class="footer-note">本頁使用 8 個索引（0–7）。整數的雜湊值為正規化後的「數值 mod 8」；字元／字串的雜湊值為各 Unicode 碼點相加後 mod 8。輸入上限為 8 個項目，以便完整觀察開啟定址。</p>
+  </main>
+
+  <script>
+    const TABLE_SIZE = 8;
+    const MAX_VALUES = TABLE_SIZE;
+    let values = [];
+    let cursor = 0;
+    let searchValue = "";
+    let chainSearchSteps = [];
+    let openSearchSteps = [];
+    let chainSearchCursor = 0;
+    let openSearchCursor = 0;
+
+    const inputForm = document.querySelector("#input-form");
+    const valueInput = document.querySelector("#value-input");
+    const inputError = document.querySelector("#input-error");
+    const chainTable = document.querySelector("#chain-table");
+    const openTable = document.querySelector("#open-table");
+    const chainDetail = document.querySelector("#chain-detail");
+    const openDetail = document.querySelector("#open-detail");
+    const previousButton = document.querySelector("#previous-button");
+    const nextButton = document.querySelector("#next-button");
+    const restartButton = document.querySelector("#restart-button");
+    const clearButton = document.querySelector("#clear-button");
+    const progressTrack = document.querySelector(".progress-track");
+    const searchForm = document.querySelector("#search-form");
+    const searchInput = document.querySelector("#search-input");
+    const searchError = document.querySelector("#search-error");
+
+    function hashValue(value) {
+      if (/^[+-]?\d+$/.test(value)) {
+        const number = Number(value);
+        if (Number.isSafeInteger(number)) {
+          const index = ((number % TABLE_SIZE) + TABLE_SIZE) % TABLE_SIZE;
+          return {
+            index,
+            formula: `${value} mod ${TABLE_SIZE} = ${index}`
+          };
+        }
+      }
+      const codePoints = [...value].map((character) => character.codePointAt(0));
+      const sum = codePoints.reduce((total, point) => total + point, 0);
+      const index = sum % TABLE_SIZE;
+      return {
+        index,
+        formula: `Unicode 碼點 (${codePoints.join(" + ")}) = ${sum}；${sum} mod ${TABLE_SIZE} = ${index}`
+      };
+    }
+
+    function simulateChaining(items) {
+      const table = Array.from({ length: TABLE_SIZE }, () => []);
+      const seen = new Set();
+      const history = items.map((value) => {
+        const hash = hashValue(value);
+        const bucket = table[hash.index];
+        if (seen.has(value)) {
+          return { value, hash, index: hash.index, duplicate: true, collision: false };
+        }
+        const collision = bucket.length > 0;
+        bucket.push(value);
+        seen.add(value);
+        return { value, hash, index: hash.index, duplicate: false, collision };
+      });
+      return { table, history };
+    }
+
+    function simulateOpenAddressing(items) {
+      const table = Array(TABLE_SIZE).fill(null);
+      const seen = new Set();
+      const history = items.map((value) => {
+        const hash = hashValue(value);
+        if (seen.has(value)) {
+          return { value, hash, index: hash.index, duplicate: true, probes: [] };
+        }
+        const probes = [];
+        let insertedAt = -1;
+        for (let offset = 0; offset < TABLE_SIZE; offset += 1) {
+          const index = (hash.index + offset) % TABLE_SIZE;
+          probes.push(index);
+          if (table[index] === null) {
+            insertedAt = index;
+            table[index] = value;
+            seen.add(value);
+            break;
+          }
+        }
+        return { value, hash, index: hash.index, duplicate: false, probes, insertedAt };
+      });
+      return { table, history };
+    }
+
+    function parseValues(text) {
+      const tokens = text.trim().split(/[\s,，、]+/).filter(Boolean);
+      if (!tokens.length) return { error: "請輸入至少一個數字或字元。" };
+      if (tokens.length > MAX_VALUES) return { error: `最多可輸入 ${MAX_VALUES} 個項目，目前輸入了 ${tokens.length} 個。` };
+      const unsafeNumbers = tokens.filter((token) => /^[+-]?\d+$/.test(token) && !Number.isSafeInteger(Number(token)));
+      if (unsafeNumbers.length) return { error: `數字 ${unsafeNumbers[0]} 超出安全整數範圍，請縮小數值。` };
+      return { values: tokens };
+    }
+
+    function makeElement(tag, className, text) {
+      const element = document.createElement(tag);
+      if (className) element.className = className;
+      if (text !== undefined) element.textContent = text;
+      return element;
+    }
+
+    function renderTable(container, table, mode, currentAction, searchSteps, searchCursor) {
+      const currentIndex = currentAction && !currentAction.duplicate
+        ? (mode === "chain" ? currentAction.index : currentAction.insertedAt)
+        : -1;
+      const probeSet = mode === "open" && currentAction ? new Set(currentAction.probes) : new Set();
+      const visibleSearchSteps = searchSteps.slice(0, searchCursor);
+      const visitedIndexes = new Set(visibleSearchSteps.map((step) => step.index));
+      const currentSearchStep = visibleSearchSteps[visibleSearchSteps.length - 1] || null;
+      const rows = table.map((bucket, index) => {
+        const row = makeElement("div", "bucket-row");
+        if (index === currentIndex) row.classList.add("active");
+        else if (probeSet.has(index)) row.classList.add("probed");
+        if (visitedIndexes.has(index)) row.classList.add("search-visited");
+        if (currentSearchStep && currentSearchStep.index === index) row.classList.add("search-current");
+        const label = makeElement("span", "bucket-index", `[${index}]`);
+        const content = makeElement("div", "bucket-values");
+        const items = mode === "chain" ? bucket : bucket === null ? [] : [bucket];
+        if (!items.length) content.append(makeElement("span", mode === "chain" ? "chain-end" : "bucket-empty", mode === "chain" ? "∅" : "空"));
+        items.forEach((item) => {
+          const chip = makeElement("span", "value-chip", item);
+          if (currentAction && !currentAction.duplicate && item === values[cursor - 1]) chip.classList.add("newest");
+          if (visibleSearchSteps.some((step) => step.value === item)) chip.classList.add("search-visited");
+          if (currentSearchStep && currentSearchStep.value === item) chip.classList.add("search-current");
+          content.append(chip);
+          if (mode === "chain") {
+            content.append(makeElement("span", "chain-link", "→"));
+          }
+        });
+        if (items.length && mode === "chain") content.append(makeElement("span", "chain-end", "∅"));
+        row.append(label, content);
+        return row;
+      });
+      container.replaceChildren(...rows);
+    }
+
+    function buildChainSearchSteps(table, target) {
+      const index = hashValue(target).index;
+      const bucket = table[index];
+      if (!bucket.length) return [{ index, value: null, empty: true, found: false }];
+      const steps = [];
+      for (const value of bucket) {
+        const found = value === target;
+        steps.push({ index, value, empty: false, found });
+        if (found) break;
+      }
+      return steps;
+    }
+
+    function buildOpenSearchSteps(table, target) {
+      const startIndex = hashValue(target).index;
+      const steps = [];
+      for (let offset = 0; offset < TABLE_SIZE; offset += 1) {
+        const index = (startIndex + offset) % TABLE_SIZE;
+        const value = table[index];
+        if (value === null) {
+          steps.push({ index, value: null, empty: true, found: false });
+          break;
+        }
+        const found = value === target;
+        steps.push({ index, value, empty: false, found });
+        if (found) break;
+      }
+      return steps;
+    }
+
+    function renderSearchResult(mode, steps, stepCursor) {
+      const prefix = mode === "chain" ? "chain" : "open";
+      const detail = document.querySelector(`#${prefix}-search-detail`);
+      const status = document.querySelector(`#${prefix}-search-status`);
+      const previous = document.querySelector(`#${prefix}-search-previous`);
+      const next = document.querySelector(`#${prefix}-search-next`);
+      const restart = document.querySelector(`#${prefix}-search-restart`);
+      const isReady = cursor === values.length && values.length > 0;
+      const currentStep = steps[stepCursor - 1] || null;
+      const complete = Boolean(currentStep && (currentStep.found || currentStep.empty || stepCursor === steps.length));
+
+      if (!searchValue || !isReady) {
+        status.classList.remove("miss");
+        status.textContent = isReady ? "輸入目標值後開始檢索" : "等待分類完成";
+        detail.replaceChildren(makeElement("p", "empty-detail", isReady
+          ? "輸入一個項目，觀察雜湊定位與逐項比較。"
+          : "完成上方所有資料分類後，即可開始檢索。"));
+      } else if (!stepCursor) {
+        status.classList.remove("miss");
+        status.textContent = `準備檢索「${searchValue}」`;
+        detail.replaceChildren(makeElement("p", "empty-detail", "按「下一步」開始計算雜湊索引並檢查資料。"));
+      } else {
+        const found = Boolean(currentStep && currentStep.found);
+        status.classList.toggle("miss", complete && !found);
+        status.textContent = complete
+          ? found ? `已找到「${searchValue}」` : `找不到「${searchValue}」`
+          : `正在檢查「${searchValue}」`;
+        const hash = hashValue(searchValue);
+        let comparison;
+        if (currentStep.empty) {
+          comparison = mode === "chain"
+            ? `索引 ${currentStep.index} 的鏈為空，檢索停止，沒有找到「${searchValue}」。`
+            : `索引 ${currentStep.index} 是空格；開啟定址遇到空格即可判定「${searchValue}」不在表中。`;
+        } else if (currentStep.found) {
+          comparison = `在索引 ${currentStep.index} 比對「${currentStep.value}」，相同，找到「${searchValue}」。`;
+        } else if (stepCursor === steps.length) {
+          comparison = `在索引 ${currentStep.index} 比對「${currentStep.value}」，不相同；${mode === "chain" ? "已到鏈尾" : "已檢查完整個表格"}，找不到「${searchValue}」。`;
+        } else {
+          comparison = `在索引 ${currentStep.index} 比對「${currentStep.value}」，不相同；${mode === "chain" ? "沿鏈檢查下一個節點" : "往下一個索引探測"}。`;
+        }
+        const rows = [
+          ["計算索引", `h(${searchValue}) = ${hash.formula}`],
+          ["本步比較", currentStep.empty ? "空格" : `「${currentStep.value}」${currentStep.found ? "＝" : "≠"}「${searchValue}」`],
+          ["檢索結果", comparison]
+        ];
+        if (mode === "open") {
+          rows.splice(1, 0, ["探測位置", steps.slice(0, stepCursor).map((step) => `[${step.index}]`).join(" → ")]);
+        }
+        detail.replaceChildren(...rows.map(([label, text]) => {
+          const row = makeElement("div", "detail-row");
+          row.append(makeElement("span", "detail-key", label), makeElement("span", "detail-text", text));
+          return row;
+        }));
+      }
+      previous.disabled = !isReady || stepCursor === 0;
+      next.disabled = !isReady || !steps.length || complete;
+      restart.disabled = !isReady || !steps.length || stepCursor === 0;
+    }
+
+    function describeAction(action, mode) {
+      if (!action) {
+        return cursor === 0 ? "按「下一步」開始分類第一個項目。" : "目前沒有可顯示的分類步驟。";
+      }
+      if (action.duplicate) return `「${action.value}」已在表中，視為重複項目，不再插入。`;
+      if (mode === "chain") {
+        return action.collision
+          ? `索引 ${action.index} 已有資料；將「${action.value}」接到同一條鏈的末端。`
+          : `索引 ${action.index} 是空的，將「${action.value}」放入此格。`;
+      }
+      if (action.insertedAt < 0) {
+        return `從索引 ${action.index} 開始檢查 ${action.probes.map((index) => `[${index}]`).join(" → ")}，表格已滿，無法插入「${action.value}」。`;
+      }
+      if (action.probes.length === 1) return `索引 ${action.index} 為空，將「${action.value}」直接放入此格。`;
+      return `索引 ${action.index} 已被占用；依序檢查 ${action.probes.map((index) => `[${index}]`).join(" → ")}，在索引 ${action.insertedAt} 找到空位。`;
+    }
+
+    function renderDetail(container, action, mode) {
+      if (!action) {
+        container.replaceChildren(makeElement("p", "empty-detail", values.length
+          ? "資料已就緒；按「下一步」查看雜湊計算和碰撞處理。"
+          : "輸入資料後，即可逐步查看每個項目的分類過程。"));
+        return;
+      }
+      const rows = [
+        ["項目", `「${action.value}」`],
+        ["計算索引", `h(${action.value}) = ${action.hash.formula}`],
+        ["處理結果", describeAction(action, mode)]
+      ];
+      if (mode === "open" && !action.duplicate) {
+        rows.splice(2, 0, ["探測順序", action.probes.length
+          ? action.probes.map((index) => `[${index}]`).join(" → ")
+          : "沒有可用索引"]);
+      }
+      container.replaceChildren(...rows.map(([label, detail]) => {
+        const row = makeElement("div", "detail-row");
+        row.append(makeElement("span", "detail-key", label), makeElement("span", "detail-text", detail));
+        return row;
+      }));
+    }
+
+    function renderSequence() {
+      const sequence = document.querySelector("#sequence");
+      if (!values.length) {
+        sequence.replaceChildren(makeElement("span", "sequence-empty", "尚未輸入資料"));
+        return;
+      }
+      sequence.replaceChildren(...values.map((value, index) => {
+        const chip = makeElement("span", "sequence-chip", value);
+        if (index < cursor) chip.classList.add(index === cursor - 1 ? "current" : "done");
+        else chip.classList.add("pending");
+        chip.setAttribute("aria-label", `${index < cursor ? "已分類" : "待分類"}：${value}`);
+        return chip;
+      }));
+    }
+
+    function render() {
+      const chain = simulateChaining(values.slice(0, cursor));
+      const open = simulateOpenAddressing(values.slice(0, cursor));
+      const chainAction = chain.history[chain.history.length - 1] || null;
+      const openAction = open.history[open.history.length - 1] || null;
+      const isReady = values.length > 0 && cursor === values.length;
+      renderTable(chainTable, chain.table, "chain", chainAction, chainSearchSteps, chainSearchCursor);
+      renderTable(openTable, open.table, "open", openAction, openSearchSteps, openSearchCursor);
+      renderDetail(chainDetail, chainAction, "chain");
+      renderDetail(openDetail, openAction, "open");
+      searchInput.disabled = !isReady;
+      document.querySelector("#search-start").disabled = !isReady;
+      document.querySelector("#search-hint").textContent = isReady
+        ? "可檢索表中存在或不存在的項目；兩種方法的步驟可分別操作。"
+        : "請先完成上方所有資料的分類。";
+      renderSearchResult("chain", chainSearchSteps, chainSearchCursor);
+      renderSearchResult("open", openSearchSteps, openSearchCursor);
+      renderSequence();
+
+      const total = values.length;
+      document.querySelector("#step-count").textContent = `STEP ${cursor} / ${total}`;
+      document.querySelector("#step-title").textContent = !total
+        ? "準備輸入資料"
+        : cursor === total ? "分類完成" : cursor === 0 ? "資料已就緒" : `已分類第 ${cursor} 個項目`;
+      progressTrack.setAttribute("aria-valuemax", String(total));
+      progressTrack.setAttribute("aria-valuenow", String(cursor));
+      document.querySelector("#progress-fill").style.width = `${total ? cursor / total * 100 : 0}%`;
+      previousButton.disabled = cursor === 0;
+      nextButton.disabled = !total || cursor >= total;
+      restartButton.disabled = !total || cursor === 0;
+      clearButton.disabled = !total;
+    }
+
+    inputForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      inputError.textContent = "";
+      const parsed = parseValues(valueInput.value);
+      if (parsed.error) {
+        inputError.textContent = parsed.error;
+        return;
+      }
+      values = parsed.values;
+      cursor = 0;
+      searchValue = "";
+      chainSearchSteps = [];
+      openSearchSteps = [];
+      chainSearchCursor = 0;
+      openSearchCursor = 0;
+      searchInput.value = "";
+      searchError.textContent = "";
+      render();
+    });
+
+    document.querySelector("#example-button").addEventListener("click", () => {
+      values = ["12", "20", "28", "A", "B"];
+      cursor = 0;
+      valueInput.value = values.join(", ");
+      inputError.textContent = "";
+      searchValue = "";
+      chainSearchSteps = [];
+      openSearchSteps = [];
+      chainSearchCursor = 0;
+      openSearchCursor = 0;
+      searchInput.value = "";
+      searchError.textContent = "";
+      render();
+    });
+    previousButton.addEventListener("click", () => {
+      if (cursor > 0) { cursor -= 1; render(); }
+    });
+    nextButton.addEventListener("click", () => {
+      if (cursor < values.length) { cursor += 1; render(); }
+    });
+    restartButton.addEventListener("click", () => {
+      cursor = 0;
+      render();
+    });
+    clearButton.addEventListener("click", () => {
+      values = [];
+      cursor = 0;
+      searchValue = "";
+      chainSearchSteps = [];
+      openSearchSteps = [];
+      chainSearchCursor = 0;
+      openSearchCursor = 0;
+      searchInput.value = "";
+      searchError.textContent = "";
+      valueInput.value = "";
+      inputError.textContent = "";
+      render();
+      valueInput.focus();
+    });
+
+    searchForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      searchError.textContent = "";
+      const target = searchInput.value.trim();
+      if (!target) {
+        searchError.textContent = "請輸入要檢索的項目。";
+        return;
+      }
+      if (/[\s,，、]/.test(target)) {
+        searchError.textContent = "一次只能檢索一個項目，請移除空白或分隔符號。";
+        return;
+      }
+      if (/^[+-]?\d+$/.test(target) && !Number.isSafeInteger(Number(target))) {
+        searchError.textContent = "數字超出安全整數範圍，請縮小數值。";
+        return;
+      }
+      if (cursor !== values.length || !values.length) {
+        searchError.textContent = "請先完成所有資料的分類，再開始檢索。";
+        return;
+      }
+      searchValue = target;
+      const chain = simulateChaining(values);
+      const open = simulateOpenAddressing(values);
+      chainSearchSteps = buildChainSearchSteps(chain.table, target);
+      openSearchSteps = buildOpenSearchSteps(open.table, target);
+      chainSearchCursor = 0;
+      openSearchCursor = 0;
+      render();
+    });
+
+    for (const mode of ["chain", "open"]) {
+      document.querySelector(`#${mode}-search-previous`).addEventListener("click", () => {
+        if (mode === "chain" && chainSearchCursor > 0) chainSearchCursor -= 1;
+        if (mode === "open" && openSearchCursor > 0) openSearchCursor -= 1;
+        render();
+      });
+      document.querySelector(`#${mode}-search-next`).addEventListener("click", () => {
+        if (mode === "chain" && chainSearchCursor < chainSearchSteps.length) chainSearchCursor += 1;
+        if (mode === "open" && openSearchCursor < openSearchSteps.length) openSearchCursor += 1;
+        render();
+      });
+      document.querySelector(`#${mode}-search-restart`).addEventListener("click", () => {
+        if (mode === "chain") chainSearchCursor = 0;
+        else openSearchCursor = 0;
+        render();
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>
