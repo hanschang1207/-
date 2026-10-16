@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f2f4ed">
+  <title>BST Lab｜二元搜尋樹</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f2f4ed; --surface: #fffefa; --ink: #182b2c; --muted: #647475;
+      --line: #d8dfd8; --teal: #176b63; --teal-dark: #10534e; --orange: #d3653e;
+      --sans: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      --serif: "Iowan Old Style", "Noto Serif TC", "Songti TC", serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--ink); font-family: var(--sans);
+      background-color: var(--paper);
+      background-image: linear-gradient(rgba(255,255,255,.42) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.42) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible { outline: 3px solid rgba(211,101,62,.48); outline-offset: 2px; }
+    .topbar { min-height: 70px; padding: 0 clamp(20px, 5vw, 72px); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); background: rgba(255,254,250,.82); }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid var(--teal); color: var(--teal); font: 17px var(--serif); }
+    .brand-title { font: 17px var(--serif); }
+    .brand-meta { color: var(--muted); font-size: 11px; letter-spacing: 1px; }
+    .top-status { display: flex; align-items: center; gap: 8px; color: var(--teal-dark); font-size: 12px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #58a27b; box-shadow: 0 0 0 4px #e4f1e9; }
+    main { width: min(100% - 40px, 1240px); margin: auto; padding: 42px 0 60px; animation: enter .45s ease-out both; }
+    @keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .intro { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 27px; }
+    .eyebrow { margin: 0 0 8px; color: var(--orange); font-size: 11px; letter-spacing: 1.5px; }
+    h1 { margin: 0; font: 500 36px/1.2 var(--serif); }
+    .intro-note { max-width: 330px; margin: 0 0 3px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 320px; align-items: start; gap: 16px; }
+    .tree-panel, .control-panel { border: 1px solid var(--line); background: var(--surface); }
+    .tree-panel { min-width: 0; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 62px; padding: 0 22px; border-bottom: 1px solid var(--line); }
+    h2 { margin: 0; font: 500 18px var(--serif); }
+    .panel-kicker { color: var(--muted); font-size: 11px; }
+    .tree-stage { min-height: 430px; overflow: auto; background: radial-gradient(ellipse at 50% 0%, #f4f8f4 0, #fffefa 66%); }
+    #tree-svg { display: block; min-width: 100%; margin: 0 auto; }
+    .tree-empty { min-height: 430px; display: grid; place-content: center; gap: 9px; color: var(--muted); text-align: center; }
+    .empty-symbol { color: #94aaa5; font: 54px/1 var(--serif); }
+    .tree-empty strong { color: var(--ink); font: 500 17px var(--serif); }
+    .tree-empty span { font-size: 12px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 18px; padding: 13px 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 7px; }
+    .legend-dot { width: 10px; height: 10px; border: 1px solid #8ca6a0; border-radius: 50%; background: #eff6f1; }
+    .legend-dot.active { border-color: var(--orange); background: #f9e4d9; }
+    .legend-dot.inserted { border-color: var(--teal); background: var(--teal); }
+    .legend-dot.visited { border-color: #638c96; background: #dce9ec; }
+    .control-panel { position: sticky; top: 16px; }
+    .control-section { padding: 19px 20px; border-bottom: 1px solid var(--line); }
+    .control-section:last-child { border-bottom: 0; }
+    .section-label { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+    .section-label strong { font: 500 16px var(--serif); }
+    .section-label span { color: var(--muted); font-size: 10px; }
+    .number-input { width: 100%; min-height: 43px; padding: 0 12px; border: 1px solid #c9d3ce; border-radius: 2px; background: #fff; color: var(--ink); }
+    .field-hint { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+    .button-row { display: flex; gap: 8px; margin-top: 12px; }
+    .button { min-height: 40px; padding: 0 13px; border: 1px solid #cbd6d0; border-radius: 2px; background: #fffefa; color: var(--teal-dark); font-size: 12px; transition: background .15s, border-color .15s, transform .15s; }
+    .button:hover:not(:disabled) { border-color: var(--teal); background: #edf5f0; }
+    .button:active:not(:disabled) { transform: translateY(1px); }
+    .button:disabled { cursor: not-allowed; opacity: .42; }
+    .button.primary { border-color: var(--teal); background: var(--teal); color: white; }
+    .button.primary:hover:not(:disabled) { background: var(--teal-dark); }
+    .button.add-button { flex: 1; }
+    .sequence { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; }
+    .sequence-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 7px; border: 1px solid var(--line); background: #f7f8f3; font: 12px var(--serif); }
+    .sequence-chip.current { border-color: #e9a88f; background: #fcf0e9; color: #94492f; }
+    .sequence-empty { align-self: center; color: #94a09d; font-size: 11px; }
+    .sequence-tools { display: flex; justify-content: space-between; gap: 12px; margin-top: 11px; }
+    .text-button { padding: 0; border: 0; background: transparent; color: var(--teal); font-size: 11px; }
+    .text-button:hover { text-decoration: underline; }
+    .message-box { min-height: 75px; padding: 12px; border-left: 3px solid #a9c8bd; background: #f1f6f1; }
+    .step-count { color: var(--muted); font-size: 10px; letter-spacing: .5px; }
+    .step-message { margin: 7px 0 0; color: var(--ink); font-size: 13px; line-height: 1.65; }
+    .step-message b { color: var(--teal-dark); font-weight: 600; }
+    .nav-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 11px; }
+    .nav-buttons .button { min-height: 43px; }
+    .progress-track { height: 3px; margin-top: 13px; background: #e8ece7; }
+    .progress-fill { height: 100%; width: 0; background: var(--orange); transition: width .2s ease; }
+    .tree-edge { stroke: #b9c9c2; stroke-width: 2; }
+    .tree-node circle { fill: #eef5f0; stroke: #6e9a8a; stroke-width: 2; transition: fill .2s, stroke .2s; }
+    .tree-node text { fill: var(--ink); font: 600 15px var(--sans); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+    .tree-node.active circle { fill: #f9e3d8; stroke: var(--orange); stroke-width: 3; }
+    .tree-node.inserted circle { fill: var(--teal); stroke: var(--teal-dark); }
+    .tree-node.inserted text { fill: white; }
+    .tree-node.traversal-visited circle { fill: #dce9ec; stroke: #638c96; }
+    .tree-node.traversal-current circle { fill: #f9e3d8; stroke: var(--orange); stroke-width: 3; }
+    .branch-label { fill: #7b9290; font: 10px var(--sans); text-anchor: middle; }
+    .error { min-height: 17px; margin: 8px 0 0; color: #b1462a; font-size: 11px; }
+    .traversal-panel { margin-top: 16px; border: 1px solid var(--line); background: var(--surface); }
+    .traversal-content { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 24px; padding: 22px; }
+    .traversal-description { margin: 7px 0 18px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+    .traversal-modes { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border: 1px solid var(--line); background: #f6f8f3; }
+    .mode-button { min-height: 34px; padding: 0 12px; border: 1px solid transparent; background: transparent; color: var(--muted); font-size: 12px; }
+    .mode-button[aria-pressed="true"] { border-color: #b8cec4; background: white; color: var(--teal-dark); }
+    .traversal-sequence { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 56px; margin-top: 14px; }
+    .traversal-value { display: grid; width: 38px; height: 38px; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: #f7f8f3; color: #a0aaa4; font-size: 12px; transition: background .18s, color .18s, border-color .18s, transform .18s; }
+    .traversal-value.visited { border-color: #9bb9bb; background: #e7f0f0; color: var(--ink); }
+    .traversal-value.current { border-color: var(--orange); background: var(--orange); color: white; transform: translateY(-3px); }
+    .traversal-empty { color: var(--muted); font-size: 12px; }
+    .traversal-controls { display: flex; align-items: center; gap: 8px; margin-top: 13px; }
+    .traversal-controls .button { min-height: 37px; }
+    .traversal-status { margin-left: auto; color: var(--muted); font-size: 11px; }
+    .traversal-note { align-self: stretch; padding: 15px 16px; border-left: 3px solid #9bb9bb; background: #edf4f2; }
+    .traversal-note strong { font: 500 15px var(--serif); }
+    .traversal-note p { margin: 8px 0 0; color: #526767; font-size: 12px; line-height: 1.75; }
+    @media (max-width: 900px) { .workspace { grid-template-columns: minmax(0, 1fr) 290px; } .control-section { padding: 17px 16px; } }
+    @media (max-width: 720px) {
+      .topbar { min-height: 62px; padding: 0 18px; } .brand-meta { display: none; }
+      main { width: min(100% - 28px, 560px); padding-top: 32px; }
+      .intro { display: block; margin-bottom: 22px; } h1 { font-size: 31px; } .intro-note { margin-top: 10px; }
+      .workspace { grid-template-columns: 1fr; } .control-panel { position: static; grid-row: 1; }
+      .tree-stage, .tree-empty { min-height: 330px; } .panel-head { padding: 0 17px; } .legend { padding: 12px 17px; }
+      .traversal-content { grid-template-columns: 1fr; gap: 16px; padding: 17px; }
+      .traversal-note { min-height: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">樹</span><span class="brand-title">BST Lab</span><span class="brand-meta">INTERACTIVE ALGORITHM</span></div>
+    <div class="top-status"><span class="status-dot" aria-hidden="true"></span>二元搜尋樹</div>
+  </header>
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <div><p class="eyebrow">DATA STRUCTURE / 01</p><h1 id="page-title">二元搜尋樹</h1></div>
+      <p class="intro-note">輸入一串數字，觀察每一次比較如何決定節點的落點。</p>
+    </section>
+    <div class="workspace">
+      <section class="tree-panel" aria-labelledby="tree-title">
+        <div class="panel-head"><h2 id="tree-title">樹狀圖</h2><span class="panel-kicker" id="tree-summary">尚未建立</span></div>
+        <div class="tree-stage" id="tree-stage" aria-live="polite"><div class="tree-empty"><span class="empty-symbol" aria-hidden="true">⌘</span><strong>從第一個數字開始</strong><span>第一個輸入值會成為根節點</span></div></div>
+        <div class="legend" aria-label="節點顏色圖例"><span class="legend-item"><i class="legend-dot"></i>已建立</span><span class="legend-item"><i class="legend-dot active"></i>目前比較／走訪</span><span class="legend-item"><i class="legend-dot inserted"></i>本步新增</span><span class="legend-item"><i class="legend-dot visited"></i>已走訪</span></div>
+      </section>
+      <aside class="control-panel" aria-label="樹狀圖操作控制">
+        <section class="control-section">
+          <div class="section-label"><strong>種植數字</strong><span>最多 20 個</span></div>
+          <form id="number-form">
+            <label class="section-label" for="number-input"><span>輸入整數序列</span></label>
+            <input class="number-input" id="number-input" name="numbers" type="text" inputmode="numeric" autocomplete="off" placeholder="例如：50, 30, 70" aria-describedby="input-hint input-error">
+            <p class="field-hint" id="input-hint">可用逗號或空白分隔；重複值會略過。</p>
+            <p class="error" id="input-error" aria-live="polite"></p>
+            <div class="button-row"><button class="button add-button primary" type="submit">＋ 加入序列</button><button class="button" id="example-button" type="button">載入範例</button></div>
+          </form>
+        </section>
+        <section class="control-section">
+          <div class="section-label"><strong>待插入序列</strong><span id="sequence-count">0 個數字</span></div>
+          <div class="sequence" id="sequence-list"><span class="sequence-empty">尚未加入數字</span></div>
+          <div class="sequence-tools"><button class="text-button" id="restart-button" type="button">從頭播放</button><button class="text-button" id="clear-button" type="button">清空全部</button></div>
+        </section>
+        <section class="control-section">
+          <div class="section-label"><strong>插入過程</strong><span>逐步判斷</span></div>
+          <div class="message-box"><div class="step-count" id="step-count">STEP 0 / 0</div><p class="step-message" id="step-message" aria-live="polite">加入數字後，按「下一步」開始。</p></div>
+          <div class="nav-buttons"><button class="button" id="previous-button" type="button" disabled>← 上一步</button><button class="button primary" id="next-button" type="button" disabled>下一步 →</button></div>
+          <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
+        </section>
+      </aside>
+    </div>
+    <section class="traversal-panel" aria-labelledby="traversal-title">
+      <div class="panel-head"><h2 id="traversal-title">走訪順序</h2><span class="panel-kicker">TRAVERSAL / 02</span></div>
+      <div class="traversal-content">
+        <div>
+          <div class="traversal-modes" role="group" aria-label="選擇走訪方式">
+            <button class="mode-button" type="button" data-traversal="preorder" aria-pressed="true">前序</button>
+            <button class="mode-button" type="button" data-traversal="inorder" aria-pressed="false">中序</button>
+            <button class="mode-button" type="button" data-traversal="postorder" aria-pressed="false">後序</button>
+          </div>
+          <p class="traversal-description" id="traversal-description">根 → 左子樹 → 右子樹</p>
+          <div class="traversal-sequence" id="traversal-sequence" aria-live="polite"><span class="traversal-empty">先建立至少一個節點</span></div>
+          <div class="traversal-controls">
+            <button class="button" id="traversal-previous" type="button" disabled>← 上一個</button>
+            <button class="button primary" id="traversal-next" type="button" disabled>下一個 →</button>
+            <button class="button" id="traversal-reset" type="button" disabled>重播</button>
+            <span class="traversal-status" id="traversal-status">0 / 0</span>
+          </div>
+        </div>
+        <aside class="traversal-note" aria-live="polite">
+          <strong id="traversal-step-title">等待開始</strong>
+          <p id="traversal-step-detail">先在上方建立樹，再按「下一個」查看走訪順序。</p>
+        </aside>
+      </div>
+    </section>
+  </main>
+  <script>
+    const numberForm = document.querySelector("#number-form");
+    const numberInput = document.querySelector("#number-input");
+    const inputError = document.querySelector("#input-error");
+    const sequenceList = document.querySelector("#sequence-list");
+    const treeStage = document.querySelector("#tree-stage");
+    const previousButton = document.querySelector("#previous-button");
+    const nextButton = document.querySelector("#next-button");
+    const stepMessage = document.querySelector("#step-message");
+    const stepCount = document.querySelector("#step-count");
+    const progressFill = document.querySelector("#progress-fill");
+    const traversalDescriptions = {
+      preorder: { label: "前序", rule: "根 → 左子樹 → 右子樹" },
+      inorder: { label: "中序", rule: "左子樹 → 根 → 右子樹" },
+      postorder: { label: "後序", rule: "左子樹 → 右子樹 → 根" }
+    };
+    let values = [];
+    let actions = [];
+    let cursor = 0;
+    let traversalMode = "preorder";
+    let traversalCursor = 0;
+
+    function buildActions(sequence) {
+      const root = { value: sequence[0], left: null, right: null };
+      const result = [{ type: "insert", value: sequence[0], parent: null, side: null }];
+      for (const value of sequence.slice(1)) {
+        let node = root;
+        while (true) {
+          const side = value < node.value ? "left" : value > node.value ? "right" : "equal";
+          result.push({ type: "compare", value, nodeValue: node.value, side });
+          if (side === "equal") {
+            result.push({ type: "duplicate", value, nodeValue: node.value });
+            break;
+          }
+          if (!node[side]) {
+            node[side] = { value, left: null, right: null };
+            result.push({ type: "insert", value, parent: node.value, side });
+            break;
+          }
+          node = node[side];
+        }
+      }
+      return result;
+    }
+
+    function findNode(root, value) {
+      let node = root;
+      while (node && node.value !== value) node = value < node.value ? node.left : node.right;
+      return node;
+    }
+
+    function replayTree() {
+      let root = null;
+      let highlighted = null;
+      let inserted = null;
+      for (const action of actions.slice(0, cursor)) {
+        if (action.type === "insert") {
+          const node = { value: action.value, left: null, right: null };
+          if (action.parent === null) root = node;
+          else {
+            const parent = findNode(root, action.parent);
+            if (parent) parent[action.side] = node;
+          }
+          inserted = action.value;
+          highlighted = null;
+        } else if (action.type === "compare" || action.type === "duplicate") {
+          highlighted = action.nodeValue;
+          inserted = null;
+        }
+      }
+      return { root, highlighted, inserted };
+    }
+
+    function getTraversalOrder(root, mode = traversalMode) {
+      const order = [];
+      function visit(node) {
+        if (!node) return;
+        if (mode === "preorder") order.push(node.value);
+        visit(node.left);
+        if (mode === "inorder") order.push(node.value);
+        visit(node.right);
+        if (mode === "postorder") order.push(node.value);
+      }
+      visit(root);
+      return order;
+    }
+
+    function renderTree() {
+      const { root, highlighted, inserted } = replayTree();
+      if (!root) {
+        treeStage.innerHTML = '<div class="tree-empty"><span class="empty-symbol" aria-hidden="true">⌘</span><strong>從第一個數字開始</strong><span>第一個輸入值會成為根節點</span></div>';
+        document.querySelector("#tree-summary").textContent = "尚未建立";
+        return;
+      }
+      let inorderIndex = 0;
+      let maxDepth = 0;
+      const positions = [];
+      function assign(node, depth, parent, side) {
+        if (!node) return;
+        maxDepth = Math.max(maxDepth, depth);
+        assign(node.left, depth + 1, node, "left");
+        positions.push({ node, x: 54 + inorderIndex * 94, y: 54 + depth * 86, parent, side });
+        inorderIndex += 1;
+        assign(node.right, depth + 1, node, "right");
+      }
+      assign(root, 0, null, null);
+      const width = Math.max(480, 108 + (inorderIndex - 1) * 94);
+      const height = Math.max(300, 100 + maxDepth * 86);
+      const traversalOrder = getTraversalOrder(root);
+      const activeTraversalValue = traversalCursor > 0 ? traversalOrder[traversalCursor - 1] : null;
+      const visitedTraversalValues = new Set(traversalOrder.slice(0, Math.max(0, traversalCursor - 1)));
+      const pointByValue = new Map(positions.map((item) => [item.node.value, item]));
+      const edges = positions.filter((item) => item.parent).map((item) => {
+        const parent = pointByValue.get(item.parent.value);
+        const labelX = (parent.x + item.x) / 2 + (item.side === "left" ? -9 : 9);
+        const labelY = (parent.y + item.y) / 2 - 2;
+        return `<line class="tree-edge" x1="${parent.x}" y1="${parent.y + 20}" x2="${item.x}" y2="${item.y - 20}"/><text class="branch-label" x="${labelX}" y="${labelY}">${item.side === "left" ? "小於" : "大於"}</text>`;
+      }).join("");
+      const nodes = positions.map(({ node, x, y }) => {
+        const state = node.value === activeTraversalValue ? " traversal-current" : visitedTraversalValues.has(node.value) ? " traversal-visited" : node.value === inserted ? " inserted" : node.value === highlighted ? " active" : "";
+        return `<g class="tree-node${state}" transform="translate(${x} ${y})"><circle r="21"/><text y="1">${node.value}</text></g>`;
+      }).join("");
+      treeStage.innerHTML = `<svg id="tree-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="二元搜尋樹，共 ${inorderIndex} 個節點">${edges}${nodes}</svg>`;
+      document.querySelector("#tree-summary").textContent = `${inorderIndex} 個節點・${maxDepth + 1} 層`;
+    }
+
+    function renderTraversal() {
+      const { root } = replayTree();
+      const order = getTraversalOrder(root);
+      const description = traversalDescriptions[traversalMode];
+      const sequence = document.querySelector("#traversal-sequence");
+      document.querySelector("#traversal-description").textContent = description.rule;
+      document.querySelectorAll("[data-traversal]").forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.traversal === traversalMode));
+      });
+      if (!order.length) {
+        sequence.innerHTML = '<span class="traversal-empty">先建立至少一個節點</span>';
+      } else {
+        const items = [];
+        order.forEach((value, index) => {
+          const item = document.createElement("span");
+          item.className = `traversal-value${index < traversalCursor - 1 ? " visited" : ""}${index === traversalCursor - 1 ? " current" : ""}`;
+          item.textContent = value;
+          item.setAttribute("aria-label", `第 ${index + 1} 個：${value}`);
+          items.push(item);
+          if (index < order.length - 1) {
+            const arrow = document.createElement("span");
+            arrow.className = "panel-kicker";
+            arrow.setAttribute("aria-hidden", "true");
+            arrow.textContent = "→";
+            items.push(arrow);
+          }
+        });
+        sequence.replaceChildren(...items);
+      }
+      document.querySelector("#traversal-status").textContent = `${traversalCursor} / ${order.length}`;
+      document.querySelector("#traversal-previous").disabled = traversalCursor === 0;
+      document.querySelector("#traversal-next").disabled = !order.length || traversalCursor >= order.length;
+      document.querySelector("#traversal-reset").disabled = !order.length || traversalCursor === 0;
+      const stepTitle = document.querySelector("#traversal-step-title");
+      const stepDetail = document.querySelector("#traversal-step-detail");
+      if (!order.length) {
+        stepTitle.textContent = "等待開始";
+        stepDetail.textContent = "先在上方建立樹，再按「下一個」查看走訪順序。";
+      } else if (traversalCursor === 0) {
+        stepTitle.textContent = `${description.label}走訪`;
+        stepDetail.textContent = `共 ${order.length} 個節點，按「下一個」開始。`;
+      } else {
+        const value = order[traversalCursor - 1];
+        stepTitle.textContent = traversalCursor === order.length ? "走訪完成" : `第 ${traversalCursor} 個節點：${value}`;
+        stepDetail.textContent = traversalCursor === order.length
+          ? `${description.label}序列：${order.join(" → ")}`
+          : `依${description.label}規則「${description.rule}」，現在拜訪節點 ${value}。`;
+      }
+    }
+
+    function describeAction(action) {
+      if (action.type === "insert") {
+        return action.parent === null ? `<b>${action.value}</b> 成為根節點。` : `找到空位：${action.parent} 的<b>${action.side === "left" ? "左" : "右"}</b>子節點，插入 <b>${action.value}</b>。`;
+      }
+      if (action.type === "duplicate") return `<b>${action.value}</b> 和節點 ${action.nodeValue} 相同，重複值不插入。`;
+      const relation = action.side === "left" ? "小於" : action.side === "right" ? "大於" : "等於";
+      const direction = action.side === "left" ? "往左" : action.side === "right" ? "往右" : "找到相同值";
+      return `比較 <b>${action.value}</b> 與節點 ${action.nodeValue}：${action.value} ${relation} ${action.nodeValue}，${direction}。`;
+    }
+
+    function renderSequence() {
+      document.querySelector("#sequence-count").textContent = `${values.length} 個數字`;
+      if (!values.length) {
+        sequenceList.innerHTML = '<span class="sequence-empty">尚未加入數字</span>';
+        return;
+      }
+      const currentAction = actions[Math.min(cursor, actions.length - 1)];
+      sequenceList.replaceChildren(...values.map((value) => {
+        const chip = document.createElement("span");
+        chip.className = `sequence-chip${currentAction && currentAction.value === value && cursor < actions.length ? " current" : ""}`;
+        chip.textContent = value;
+        return chip;
+      }));
+    }
+
+    function render() {
+      renderTree();
+      renderSequence();
+      renderTraversal();
+      const total = actions.length;
+      stepCount.textContent = `STEP ${cursor} / ${total}`;
+      if (!total) stepMessage.textContent = "加入數字後，按「下一步」開始。";
+      else if (cursor === 0) stepMessage.textContent = "序列已就緒，按「下一步」開始插入。";
+      else if (cursor === total) stepMessage.innerHTML = "所有數字都已處理完成。";
+      else stepMessage.innerHTML = describeAction(actions[cursor - 1]);
+      previousButton.disabled = cursor === 0;
+      nextButton.disabled = cursor >= total;
+      progressFill.style.width = `${total ? cursor / total * 100 : 0}%`;
+      document.querySelector("#restart-button").disabled = !total;
+      document.querySelector("#clear-button").disabled = !values.length;
+    }
+
+    function addValues(incoming) {
+      inputError.textContent = "";
+      if (!incoming.length) {
+        inputError.textContent = "請輸入至少一個整數。";
+        return;
+      }
+      if (values.length + incoming.length > 20) {
+        inputError.textContent = `最多可加入 20 個數字，目前還能加入 ${20 - values.length} 個。`;
+        return;
+      }
+      values.push(...incoming);
+      actions = buildActions(values);
+      cursor = 0;
+      traversalCursor = 0;
+      numberInput.value = "";
+      render();
+    }
+
+    numberForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const tokens = numberInput.value.trim().split(/[\s,，、]+/).filter(Boolean);
+      if (!tokens.length || tokens.some((token) => !/^[+-]?\d+$/.test(token))) {
+        inputError.textContent = "請輸入有效整數，並以逗號或空白分隔。";
+        return;
+      }
+      const incoming = tokens.map(Number);
+      if (incoming.some((value) => !Number.isSafeInteger(value))) {
+        inputError.textContent = "數字超出安全整數範圍，請縮小數值。";
+        return;
+      }
+      addValues(incoming);
+    });
+
+    document.querySelector("#example-button").addEventListener("click", () => {
+      values = [];
+      addValues([50, 30, 70, 20, 40, 60, 80]);
+    });
+    nextButton.addEventListener("click", () => { if (cursor < actions.length) { cursor += 1; traversalCursor = 0; render(); } });
+    previousButton.addEventListener("click", () => { if (cursor > 0) { cursor -= 1; traversalCursor = 0; render(); } });
+    document.querySelector("#restart-button").addEventListener("click", () => { cursor = 0; traversalCursor = 0; render(); });
+    document.querySelectorAll("[data-traversal]").forEach((button) => {
+      button.addEventListener("click", () => { traversalMode = button.dataset.traversal; traversalCursor = 0; render(); });
+    });
+    document.querySelector("#traversal-next").addEventListener("click", () => {
+      const { root } = replayTree();
+      if (traversalCursor < getTraversalOrder(root).length) { traversalCursor += 1; render(); }
+    });
+    document.querySelector("#traversal-previous").addEventListener("click", () => {
+      if (traversalCursor > 0) { traversalCursor -= 1; render(); }
+    });
+    document.querySelector("#traversal-reset").addEventListener("click", () => { traversalCursor = 0; render(); });
+    document.querySelector("#clear-button").addEventListener("click", () => {
+      values = []; actions = []; cursor = 0; traversalCursor = 0; numberInput.value = ""; inputError.textContent = ""; render();
+    });
+    render();
+  </script>
+</body>
+</html>
