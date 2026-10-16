@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f2f4ed">
+  <title>Graph Lab｜圖形視覺化</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f2f4ed;
+      --surface: #fffefa;
+      --ink: #182b2c;
+      --muted: #647475;
+      --line: #d8dfd8;
+      --teal: #176b63;
+      --teal-dark: #10534e;
+      --orange: #d3653e;
+      --sans: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      --serif: "Iowan Old Style", "Noto Serif TC", "Songti TC", serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--sans);
+      background-color: var(--paper);
+      background-image: linear-gradient(rgba(255,255,255,.42) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.42) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+
+    .topbar {
+      min-height: 70px;
+      padding: 0 clamp(20px, 5vw, 72px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,254,250,.82);
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid var(--teal); color: var(--teal); font: 17px var(--serif); }
+    .brand-title { font: 17px var(--serif); }
+    .brand-meta { margin-left: 10px; color: var(--muted); font-size: 11px; letter-spacing: 1px; }
+    .top-status { display: flex; align-items: center; gap: 8px; color: var(--teal-dark); font-size: 12px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #58a27b; box-shadow: 0 0 0 4px #e4f1e9; }
+
+    main { width: min(100% - 40px, 1100px); margin: auto; padding: 48px 0 64px; animation: enter .45s ease-out both; }
+    @keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .intro { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
+    .eyebrow { margin: 0 0 8px; color: var(--orange); font-size: 11px; letter-spacing: 1.5px; }
+    h1 { margin: 0; font: 500 clamp(30px, 5vw, 38px)/1.2 var(--serif); }
+    .intro-note { max-width: 330px; margin: 0 0 3px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+
+    .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 270px; align-items: start; gap: 16px; }
+    .graph-panel, .info-panel { border: 1px solid var(--line); background: var(--surface); }
+    .panel-head { min-height: 62px; padding: 0 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); }
+    h2 { margin: 0; font: 500 18px var(--serif); }
+    .panel-kicker { color: var(--muted); font-size: 11px; }
+    .graph-stage { min-height: 440px; overflow: auto; background: radial-gradient(ellipse at 50% 0%, #f4f8f4 0, #fffefa 66%); }
+    svg { display: block; width: 100%; min-width: 490px; height: auto; min-height: 440px; }
+    .edge { stroke: #86a69a; stroke-width: 2.5; stroke-linecap: round; }
+    .edge.accent { stroke: #d9a187; }
+    .node circle { fill: #eef5f0; stroke: #6e9a8a; stroke-width: 2.5; }
+    .node text { fill: var(--ink); font: 600 18px var(--sans); text-anchor: middle; dominant-baseline: central; }
+    .node > .visit-badge { opacity: 0; fill: var(--teal); stroke: var(--surface); stroke-width: 2; transition: opacity .2s; }
+    .node > .visit-number { opacity: 0; fill: white; font: 600 10px var(--sans); }
+    .node.visited > circle:first-child { fill: #dcece4; stroke: var(--teal); }
+    .node.visited > .visit-badge, .node.visited > .visit-number { opacity: 1; }
+    .node.current > circle:first-child { fill: #f9e3d8; stroke: var(--orange); stroke-width: 3; }
+    .legend { display: flex; flex-wrap: wrap; gap: 18px; padding: 13px 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 7px; }
+    .legend-node { width: 12px; height: 12px; border: 1px solid #6e9a8a; border-radius: 50%; background: #eef5f0; }
+    .legend-edge { width: 18px; height: 2px; background: #86a69a; }
+
+    .info-panel { position: sticky; top: 16px; }
+    .info-section { padding: 20px; border-bottom: 1px solid var(--line); }
+    .info-section:last-child { border-bottom: 0; }
+    .section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
+    .section-heading strong { font: 500 16px var(--serif); }
+    .section-heading span { color: var(--muted); font-size: 10px; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .stat { padding: 12px; border: 1px solid var(--line); background: #f8f9f5; }
+    .stat strong { display: block; color: var(--teal-dark); font: 500 25px var(--serif); }
+    .stat span { color: var(--muted); font-size: 11px; }
+    .edge-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+    .edge-chip { padding: 8px 5px; border: 1px solid #d8e3dc; background: #f4f8f4; color: var(--teal-dark); text-align: center; font: 13px var(--serif); }
+    .description { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.75; }
+    .start-field { display: grid; gap: 7px; margin-bottom: 12px; color: var(--muted); font-size: 11px; }
+    .start-input { width: 100%; min-height: 40px; padding: 0 11px; border: 1px solid #c9d3ce; border-radius: 2px; background: #fff; color: var(--ink); font: 14px var(--sans); text-transform: uppercase; }
+    .start-input[aria-invalid="true"] { border-color: #b1462a; }
+    .start-input:focus-visible, .run-button:focus-visible, .step-button:focus-visible { outline: 3px solid rgba(211,101,62,.42); outline-offset: 2px; }
+    .run-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .run-button { min-height: 39px; border: 1px solid var(--teal); border-radius: 2px; background: var(--teal); color: white; font: 12px var(--sans); cursor: pointer; transition: background .15s; }
+    .run-button:hover { background: var(--teal-dark); }
+    .run-button[aria-pressed="true"] { box-shadow: inset 0 0 0 2px rgba(255,255,255,.45); }
+    .run-button.secondary { background: #fffefa; color: var(--teal-dark); }
+    .run-button.secondary:hover { background: #edf5f0; }
+    .step-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 12px 22px; border-top: 1px solid var(--line); background: #fffefa; }
+    .step-button { min-height: 40px; border: 1px solid #cbd6d0; border-radius: 2px; background: #fffefa; color: var(--teal-dark); font: 12px var(--sans); cursor: pointer; }
+    .step-button:hover:not(:disabled) { border-color: var(--teal); background: #edf5f0; }
+    .step-button:disabled { cursor: not-allowed; opacity: .45; }
+    .run-button:disabled { cursor: not-allowed; opacity: .45; }
+    .walk-status { min-height: 38px; margin: 12px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+    .sequence { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; }
+    .sequence-chip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 7px; border: 1px solid var(--line); background: #f7f8f3; color: var(--ink); font: 12px var(--serif); }
+    .sequence-chip.current { border-color: #e9a88f; background: #fcf0e9; color: #94492f; }
+    .sequence-chip.visited { border-color: #c8ddd1; background: #edf5f0; color: var(--teal-dark); }
+    .sequence-index { color: var(--muted); font: 10px var(--sans); }
+    .edge.active { stroke: var(--orange); stroke-width: 4; }
+    .thought-panel { margin-top: 16px; border: 1px solid var(--line); background: var(--surface); }
+    .thought-content { padding: 20px 22px 22px; }
+    .thought-current { min-height: 56px; padding: 13px 15px; border-left: 3px solid var(--orange); background: #fcf3ed; color: var(--ink); font-size: 13px; line-height: 1.7; }
+    .thought-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; color: var(--muted); font-size: 11px; }
+    .thought-meta strong { color: var(--teal-dark); font-weight: 600; }
+    .thought-log { display: grid; gap: 7px; max-height: 310px; margin: 16px 0 0; padding: 0; overflow-y: auto; list-style: none; }
+    .thought-log li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 9px; align-items: start; padding: 9px 10px; border: 1px solid transparent; color: var(--muted); font-size: 11px; line-height: 1.6; }
+    .thought-log li.active { border-color: #e8c6b7; background: #fff8f3; color: var(--ink); }
+    .thought-index { display: grid; width: 22px; height: 22px; place-items: center; border: 1px solid var(--line); border-radius: 50%; color: var(--muted); font-size: 10px; }
+    .thought-log li.active .thought-index { border-color: var(--orange); color: var(--orange); }
+
+    @media (max-width: 760px) {
+      main { padding-top: 34px; }
+      .intro { align-items: start; flex-direction: column; gap: 12px; }
+      .workspace { grid-template-columns: 1fr; }
+      .info-panel { position: static; }
+      .graph-stage, svg { min-height: 360px; }
+      .step-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 12px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">G</span>
+      <div><span class="brand-title">Graph Lab</span><span class="brand-meta">GRAPH VISUALIZER</span></div>
+    </div>
+    <div class="top-status"><span class="status-dot" aria-hidden="true"></span>無向圖・6 個頂點</div>
+  </header>
+
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">資料結構・圖形</p>
+        <h1 id="page-title">圖形，從頂點開始</h1>
+      </div>
+      <p class="intro-note">以頂點與邊表示節點之間的關係。下方呈現由 A 至 F 組成的無向圖。</p>
+    </section>
+
+    <div class="workspace">
+      <section class="graph-panel" aria-labelledby="graph-heading">
+        <div class="panel-head">
+          <h2 id="graph-heading">關係圖</h2>
+          <span class="panel-kicker">UNDIRECTED GRAPH</span>
+        </div>
+        <div class="graph-stage">
+          <svg viewBox="0 0 680 540" role="img" aria-labelledby="graph-title graph-description">
+            <title id="graph-title">頂點 A、B、C、D、E、F 的無向圖</title>
+            <desc id="graph-description">包含 AB、BC、AC、CD、BD、CE、DE、DF、EF 共九條邊。</desc>
+            <g aria-hidden="true">
+              <line class="edge accent" x1="180" y1="100" x2="500" y2="100" data-edge="AB" />
+              <line class="edge" x1="500" y1="100" x2="180" y2="320" data-edge="BC" />
+              <line class="edge accent" x1="180" y1="100" x2="180" y2="320" data-edge="AC" />
+              <line class="edge" x1="180" y1="320" x2="500" y2="320" data-edge="CD" />
+              <line class="edge accent" x1="500" y1="100" x2="500" y2="320" data-edge="BD" />
+              <line class="edge" x1="180" y1="320" x2="180" y2="500" data-edge="CE" />
+              <line class="edge" x1="500" y1="320" x2="180" y2="500" data-edge="DE" />
+              <line class="edge accent" x1="500" y1="320" x2="500" y2="500" data-edge="DF" />
+              <line class="edge" x1="180" y1="500" x2="500" y2="500" data-edge="EF" />
+            </g>
+            <g class="node" data-node="A"><circle cx="180" cy="100" r="26" /><text x="180" y="100">A</text><circle class="visit-badge" cx="202" cy="78" r="10" /><text class="visit-number" x="202" y="78" data-visit-number></text></g>
+            <g class="node" data-node="B"><circle cx="500" cy="100" r="26" /><text x="500" y="100">B</text><circle class="visit-badge" cx="522" cy="78" r="10" /><text class="visit-number" x="522" y="78" data-visit-number></text></g>
+            <g class="node" data-node="C"><circle cx="180" cy="320" r="26" /><text x="180" y="320">C</text><circle class="visit-badge" cx="202" cy="298" r="10" /><text class="visit-number" x="202" y="298" data-visit-number></text></g>
+            <g class="node" data-node="D"><circle cx="500" cy="320" r="26" /><text x="500" y="320">D</text><circle class="visit-badge" cx="522" cy="298" r="10" /><text class="visit-number" x="522" y="298" data-visit-number></text></g>
+            <g class="node" data-node="E"><circle cx="180" cy="500" r="26" /><text x="180" y="500">E</text><circle class="visit-badge" cx="202" cy="478" r="10" /><text class="visit-number" x="202" y="478" data-visit-number></text></g>
+            <g class="node" data-node="F"><circle cx="500" cy="500" r="26" /><text x="500" y="500">F</text><circle class="visit-badge" cx="522" cy="478" r="10" /><text class="visit-number" x="522" y="478" data-visit-number></text></g>
+          </svg>
+        </div>
+        <div class="legend" aria-label="圖例">
+          <span class="legend-item"><span class="legend-node" aria-hidden="true"></span>頂點（Vertex）</span>
+          <span class="legend-item"><span class="legend-edge" aria-hidden="true"></span>邊（Edge）</span>
+        </div>
+        <div class="step-controls" role="group" aria-label="走訪播放控制">
+          <button class="step-button" id="previous-button" type="button" disabled>上一步</button>
+          <button class="step-button" id="next-button" type="button" disabled>下一步</button>
+          <button class="step-button" id="auto-button" type="button" disabled>自動播放</button>
+          <button class="step-button" id="restart-button" type="button" disabled>重新開始</button>
+        </div>
+      </section>
+
+      <aside class="info-panel" aria-label="圖形資訊">
+        <section class="info-section" aria-labelledby="walk-heading">
+          <div class="section-heading"><strong id="walk-heading">BFS / DFS 演示</strong><span>TRAVERSAL</span></div>
+          <label class="start-field" for="start-input">
+            <span>輸入起點（A–F）</span>
+            <input class="start-input" id="start-input" type="text" maxlength="1" value="D" autocomplete="off" spellcheck="false" aria-describedby="walk-status">
+          </label>
+          <div class="run-buttons">
+            <button class="run-button" id="bfs-button" type="button" aria-pressed="false">BFS</button>
+            <button class="run-button secondary" id="dfs-button" type="button" aria-pressed="false">DFS</button>
+          </div>
+          <p class="walk-status" id="walk-status" role="status" aria-live="polite">輸入起點並選擇 BFS 或 DFS，再按「下一步」逐步演示。</p>
+        </section>
+        <section class="info-section" aria-labelledby="sequence-heading">
+          <div class="section-heading"><strong id="sequence-heading">走訪序列</strong><span id="sequence-method">尚未開始</span></div>
+          <div class="sequence" id="sequence" aria-label="走訪順序"></div>
+          <p class="description" id="frontier-state">待探索：—</p>
+        </section>
+        <section class="info-section">
+          <div class="section-heading"><strong>圖形概覽</strong><span>SUMMARY</span></div>
+          <div class="stats">
+            <div class="stat"><strong>6</strong><span>頂點</span></div>
+            <div class="stat"><strong>9</strong><span>邊</span></div>
+          </div>
+        </section>
+        <section class="info-section">
+          <div class="section-heading"><strong>邊清單</strong><span>9 EDGES</span></div>
+          <div class="edge-list" aria-label="圖形中的邊">
+            <span class="edge-chip">AB</span><span class="edge-chip">BC</span><span class="edge-chip">AC</span>
+            <span class="edge-chip">CD</span><span class="edge-chip">BD</span><span class="edge-chip">CE</span>
+            <span class="edge-chip">DE</span><span class="edge-chip">DF</span><span class="edge-chip">EF</span>
+          </div>
+        </section>
+        <section class="info-section">
+          <p class="description">每條邊代表兩個頂點相連；由於是無向圖，連線不帶方向。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="thought-panel" aria-labelledby="thought-heading">
+      <div class="panel-head">
+        <h2 id="thought-heading">思考流程</h2>
+        <span class="panel-kicker" id="thought-progress">等待開始</span>
+      </div>
+      <div class="thought-content">
+        <div class="thought-current" id="thought-current" role="status" aria-live="polite">選擇起點與 BFS／DFS 後，逐步查看演算法如何選擇下一個頂點。</div>
+        <div class="thought-meta">
+          <span id="frontier-label">資料結構</span>
+          <span id="visited-state">已拜訪：—</span>
+        </div>
+        <ol class="thought-log" id="thought-log" aria-label="完整思考步驟"></ol>
+      </div>
+    </section>
+  </main>
+  <script>
+    const adjacency = {
+      A: ["B", "C"],
+      B: ["A", "C", "D"],
+      C: ["A", "B", "D", "E"],
+      D: ["B", "C", "E", "F"],
+      E: ["C", "D", "F"],
+      F: ["D", "E"]
+    };
+    const startInput = document.querySelector("#start-input");
+    const status = document.querySelector("#walk-status");
+    const sequence = document.querySelector("#sequence");
+    const sequenceMethod = document.querySelector("#sequence-method");
+    const currentThought = document.querySelector("#thought-current");
+    const thoughtLog = document.querySelector("#thought-log");
+    const thoughtProgress = document.querySelector("#thought-progress");
+    const frontierLabel = document.querySelector("#frontier-label");
+    const frontierState = document.querySelector("#frontier-state");
+    const visitedState = document.querySelector("#visited-state");
+    const bfsButton = document.querySelector("#bfs-button");
+    const dfsButton = document.querySelector("#dfs-button");
+    const previousButton = document.querySelector("#previous-button");
+    const nextButton = document.querySelector("#next-button");
+    const autoButton = document.querySelector("#auto-button");
+    const restartButton = document.querySelector("#restart-button");
+    let events = [];
+    let stepIndex = -1;
+    let method = "";
+    let timer;
+
+    function makeEvent(thought, current, edge, order, frontier, frontierType) {
+      events.push({ thought, current, edge, order: [...order], frontier: [...frontier], frontierType });
+    }
+
+    function buildTrace(start, traversalMethod) {
+      events = [];
+      const discovered = new Set();
+      const order = [];
+
+      if (traversalMethod === "BFS") {
+        const queue = [start];
+        discovered.add(start);
+        makeEvent(`初始化 BFS：將起點 ${start} 標記為已發現並放入佇列。`, start, null, order, queue, "佇列");
+        while (queue.length > 0) {
+          const vertex = queue.shift();
+          order.push(vertex);
+          makeEvent(`從佇列前端取出 ${vertex}，依序走訪第 ${order.length} 個頂點。`, vertex, null, order, queue, "佇列");
+          for (const neighbor of adjacency[vertex]) {
+            makeEvent(`檢查邊 ${vertex}${neighbor}：確認相鄰頂點 ${neighbor} 是否已發現。`, vertex, `${vertex}${neighbor}`, order, queue, "佇列");
+            if (discovered.has(neighbor)) {
+              makeEvent(`${neighbor} 已經發現，不重複加入佇列。`, vertex, `${vertex}${neighbor}`, order, queue, "佇列");
+            } else {
+              discovered.add(neighbor);
+              queue.push(neighbor);
+              makeEvent(`${neighbor} 尚未發現：標記並加入佇列尾端，稍後再走訪。`, neighbor, `${vertex}${neighbor}`, order, queue, "佇列");
+            }
+          }
+        }
+        makeEvent(`佇列已空，BFS 完成；共走訪 ${order.length} 個頂點。`, null, null, order, queue, "佇列");
+        return events;
+      }
+
+      const path = [];
+      makeEvent(`初始化 DFS：從起點 ${start} 開始，沿著尚未走訪的路徑深入。`, null, null, order, path, "遞迴路徑");
+
+      function visit(vertex, viaEdge = null) {
+        discovered.add(vertex);
+        order.push(vertex);
+        path.push(vertex);
+        const thought = viaEdge
+          ? `沿 ${viaEdge} 深入到 ${vertex}，標記為第 ${order.length} 個走訪的頂點。`
+          : `深入到 ${vertex}，標記為第 ${order.length} 個走訪的頂點。`;
+        makeEvent(thought, vertex, viaEdge, order, path, "遞迴路徑");
+        for (const neighbor of adjacency[vertex]) {
+          makeEvent(`檢查邊 ${vertex}${neighbor}：確認 ${neighbor} 是否已走訪。`, vertex, `${vertex}${neighbor}`, order, path, "遞迴路徑");
+          if (discovered.has(neighbor)) {
+            makeEvent(`${neighbor} 已走訪，略過並繼續檢查 ${vertex} 的其他鄰居。`, vertex, `${vertex}${neighbor}`, order, path, "遞迴路徑");
+          } else {
+            visit(neighbor, `${vertex}${neighbor}`);
+          }
+        }
+        path.pop();
+        makeEvent(`${vertex} 的鄰居都已檢查完畢，回溯到上一層。`, path.at(-1) ?? null, null, order, path, "遞迴路徑");
+      }
+
+      visit(start);
+      makeEvent(`所有路徑皆已完成，DFS 結束；共走訪 ${order.length} 個頂點。`, null, null, order, path, "遞迴路徑");
+      return events;
+    }
+
+    function stopAutoPlay() {
+      window.clearTimeout(timer);
+      timer = undefined;
+      autoButton.textContent = "自動播放";
+    }
+
+    function clearTraversal() {
+      stopAutoPlay();
+      document.querySelectorAll(".node").forEach((node) => {
+        node.classList.remove("visited", "current");
+        node.removeAttribute("aria-label");
+        node.querySelector("[data-visit-number]").textContent = "";
+      });
+      document.querySelectorAll(".edge").forEach((edge) => edge.classList.remove("active"));
+      sequence.replaceChildren();
+      thoughtLog.replaceChildren();
+      frontierState.textContent = "待探索：—";
+      frontierLabel.innerHTML = "資料結構：<strong>—</strong>";
+      visitedState.textContent = "已拜訪：—";
+      thoughtProgress.textContent = "等待開始";
+      currentThought.textContent = "選擇起點與 BFS／DFS 後，逐步查看演算法如何選擇下一個頂點。";
+      previousButton.disabled = true;
+      nextButton.disabled = true;
+      autoButton.disabled = true;
+      restartButton.disabled = true;
+      bfsButton.setAttribute("aria-pressed", "false");
+      dfsButton.setAttribute("aria-pressed", "false");
+    }
+
+    function startTraversal(traversalMethod) {
+      const start = startInput.value.trim().toUpperCase();
+      if (!Object.hasOwn(adjacency, start)) {
+        clearTraversal();
+        sequenceMethod.textContent = "無效起點";
+        startInput.setAttribute("aria-invalid", "true");
+        status.textContent = "請輸入有效頂點 A、B、C、D、E 或 F。";
+        startInput.focus();
+        return;
+      }
+
+      startInput.value = start;
+      startInput.removeAttribute("aria-invalid");
+      clearTraversal();
+      method = traversalMethod;
+      events = buildTrace(start, method);
+      stepIndex = 0;
+      sequenceMethod.textContent = `${method}・起點 ${start}`;
+      bfsButton.setAttribute("aria-pressed", String(method === "BFS"));
+      dfsButton.setAttribute("aria-pressed", String(method === "DFS"));
+      nextButton.disabled = false;
+      autoButton.disabled = false;
+      restartButton.disabled = false;
+      renderStep();
+    }
+
+    function renderStep() {
+      const event = events[stepIndex];
+      document.querySelectorAll(".node").forEach((node) => {
+        const vertex = node.dataset.node;
+        const visitNumber = event.order.indexOf(vertex);
+        node.classList.toggle("visited", visitNumber !== -1);
+        node.classList.toggle("current", event.current === vertex);
+        node.querySelector("[data-visit-number]").textContent = visitNumber === -1 ? "" : String(visitNumber + 1);
+        if (visitNumber === -1) {
+          node.removeAttribute("aria-label");
+        } else {
+          node.setAttribute("aria-label", `${vertex}，第 ${visitNumber + 1} 個走訪`);
+        }
+      });
+      document.querySelectorAll(".edge").forEach((edge) => {
+        edge.classList.toggle("active", edge.dataset.edge === event.edge || edge.dataset.edge === event.edge?.split("").reverse().join(""));
+      });
+
+      sequence.replaceChildren();
+      event.order.forEach((vertex, index) => {
+        const chip = document.createElement("span");
+        chip.className = `sequence-chip${event.current === vertex ? " current" : " visited"}`;
+        chip.setAttribute("aria-label", `第 ${index + 1} 個：${vertex}`);
+        const number = document.createElement("span");
+        number.className = "sequence-index";
+        number.textContent = String(index + 1);
+        chip.append(number, document.createTextNode(vertex));
+        sequence.append(chip);
+      });
+
+      currentThought.textContent = event.thought;
+      frontierLabel.innerHTML = `資料結構：<strong>${event.frontierType}</strong>`;
+      frontierState.textContent = `${method === "BFS" ? "佇列" : "遞迴路徑"}：${event.frontier.length ? event.frontier.join(" → ") : "空"}`;
+      visitedState.textContent = `已拜訪：${event.order.length ? event.order.join(" → ") : "尚無"}`;
+      thoughtProgress.textContent = `步驟 ${stepIndex + 1} / ${events.length}`;
+      status.textContent = event.thought;
+      previousButton.disabled = stepIndex === 0;
+      nextButton.disabled = stepIndex === events.length - 1;
+
+      thoughtLog.replaceChildren();
+      events.slice(0, stepIndex + 1).forEach((item, index) => {
+        const row = document.createElement("li");
+        if (index === stepIndex) row.classList.add("active");
+        const number = document.createElement("span");
+        number.className = "thought-index";
+        number.textContent = String(index + 1);
+        const text = document.createElement("span");
+        text.textContent = item.thought;
+        row.append(number, text);
+        thoughtLog.append(row);
+      });
+      thoughtLog.lastElementChild?.scrollIntoView({ block: "nearest" });
+
+      if (stepIndex === events.length - 1) {
+        status.textContent = event.thought;
+        stopAutoPlay();
+      }
+    }
+
+    function moveStep(direction) {
+      stopAutoPlay();
+      stepIndex = Math.max(0, Math.min(events.length - 1, stepIndex + direction));
+      renderStep();
+    }
+
+    function autoPlayStep() {
+      if (stepIndex >= events.length - 1) {
+        stopAutoPlay();
+        return;
+      }
+      stepIndex += 1;
+      renderStep();
+      if (stepIndex < events.length - 1) {
+        timer = window.setTimeout(autoPlayStep, 850);
+      }
+    }
+
+    bfsButton.addEventListener("click", () => startTraversal("BFS"));
+    dfsButton.addEventListener("click", () => startTraversal("DFS"));
+    previousButton.addEventListener("click", () => moveStep(-1));
+    nextButton.addEventListener("click", () => moveStep(1));
+    restartButton.addEventListener("click", () => startTraversal(method));
+    autoButton.addEventListener("click", () => {
+      if (timer !== undefined) {
+        stopAutoPlay();
+        status.textContent = "自動播放已暫停，可按「下一步」繼續。";
+        return;
+      }
+      if (stepIndex >= events.length - 1) return;
+      autoButton.textContent = "暫停";
+      autoPlayStep();
+    });
+    startInput.addEventListener("input", () => {
+      startInput.removeAttribute("aria-invalid");
+      clearTraversal();
+      sequenceMethod.textContent = "尚未開始";
+      status.textContent = "起點已變更，請重新選擇 BFS 或 DFS。";
+    });
+  </script>
+</body>
+</html>
