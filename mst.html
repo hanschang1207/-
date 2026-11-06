@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>最小生成樹｜Kruskal 演示</title>
+<style>
+:root{--bg:#eef3ef;--paper:#fff;--ink:#18312f;--muted:#657774;--line:#d5dfd8;--green:#176b63;--orange:#c96845;--blue:#587f9d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Microsoft JhengHei","Noto Sans TC",sans-serif}.top{height:68px;padding:0 5vw;display:flex;align-items:center;border-bottom:1px solid var(--line);background:#fbfdfb}.brand{font-size:19px;font-weight:700}.brand b{color:var(--green)}main{width:min(1180px,calc(100% - 32px));margin:0 auto;padding:28px 0 50px}.heading{display:flex;justify-content:space-between;align-items:end;margin-bottom:16px}.heading h1{margin:0;font-size:30px}.heading p{margin:0;color:var(--muted);font-size:13px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:14px}.card{border:1px solid var(--line);background:var(--paper)}.card-head{height:58px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}.card-head h2{font-size:17px;margin:0}.stage{height:390px;position:relative;overflow:hidden;background:radial-gradient(circle at center,#f8fbf8,#fff)}svg{width:100%;height:100%}.edge-line{stroke:#9bb2a7;stroke-width:3}.edge-line.accept{stroke:var(--green);stroke-width:7}.edge-line.reject{stroke:#d0d7d3;stroke-width:2}.edge-line.current{stroke:var(--orange);stroke-width:7}.weight{fill:#fff;stroke:#aab9b1;stroke-width:1;font-size:13px;font-weight:bold;text-anchor:middle;dominant-baseline:central}.node circle{fill:#edf4ef;stroke:#668b7c;stroke-width:3}.node text{fill:var(--ink);font-size:18px;font-weight:bold;text-anchor:middle;dominant-baseline:central}.stats{padding:16px}.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stat{border:1px solid var(--line);padding:12px;background:#f7faf7}.stat strong{display:block;font-size:25px;color:var(--green)}.stat span{font-size:12px;color:var(--muted)}.section{padding:14px;border-top:1px solid var(--line)}.section h3{margin:0 0 10px;font-size:14px}.weight-list{display:grid;grid-template-columns:1fr 55px;gap:6px 8px;align-items:center;max-height:150px;overflow:auto}.weight-list label{font-size:13px}.weight-list input{width:55px;height:34px;border:1px solid var(--line);text-align:center;font-size:14px}.buttons{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.button{height:40px;border:1px solid var(--green);background:#fff;color:var(--green);cursor:pointer}.button.primary{background:var(--green);color:#fff}.button:disabled{opacity:.45;cursor:not-allowed}.status{min-height:48px;margin-top:10px;padding:10px;background:#f4f7f4;color:var(--muted);font-size:12px;line-height:1.5}.queue-card{margin-top:14px}.queue{height:210px;padding:14px 18px;display:flex;flex-direction:column-reverse;justify-content:flex-start;gap:7px;overflow:auto}.ticket{display:grid;grid-template-columns:44px 70px 1fr auto;align-items:center;min-height:42px;padding:0 12px;border:1px solid var(--line);background:#fafcf9;font-size:13px}.ticket.current{border-color:var(--orange);background:#fdf0e9}.ticket.accept{border-left:5px solid var(--green);background:#edf6f1}.ticket.reject{border-left:5px solid #b7c0bc;background:#f4f5f3;color:#798581}.ticket b{font-size:16px}.badge{padding:4px 8px;border-radius:20px;background:#eef2ef;font-size:11px}.ticket.accept .badge{background:#dcece3;color:#176b63}.ticket.reject .badge{background:#e2e5e3;color:#68736f}@media(max-width:800px){.layout{grid-template-columns:1fr}.stats{display:grid;grid-template-columns:1fr 1fr}.section{border-top:0;border-left:1px solid var(--line)}.heading{align-items:start}.heading p{display:none}.ticket{grid-template-columns:40px 60px 1fr auto}.stage{height:350px}}@media(max-width:520px){.stats{grid-template-columns:1fr}.section{border-left:0;border-top:1px solid var(--line)}.ticket{grid-template-columns:34px 50px 1fr}.ticket .badge{grid-column:3;text-align:right}.layout{gap:10px}}
+</style>
+</head>
+<body>
+<div class="top"><div class="brand"><b>Graph Lab</b>｜Kruskal 最小生成樹</div></div>
+<main>
+<div class="heading"><h1>最小生成樹範例</h1><p>Kruskal 演算法：每次取出權重最小的票，形成樹時保留，形成環時丟棄。</p></div>
+<div class="layout">
+<section class="card"><div class="card-head"><h2>圖形</h2><span id="stepLabel" style="font-size:12px;color:var(--muted)">準備開始</span></div><div class="stage"><svg id="svg" viewBox="0 0 650 390"></svg></div></section>
+<aside class="card"><div class="card-head"><h2>統計</h2></div><div class="stats"><div class="stat-grid"><div class="stat"><strong id="edgeCount">9</strong><span>邊的總量</span></div><div class="stat"><strong id="treeCount">0</strong><span>已拿取的邊</span></div><div class="stat"><strong id="totalWeight">0</strong><span>MST 總權重</span></div><div class="stat"><strong id="rejectCount">0</strong><span>丟棄的票</span></div></div></div><div class="section"><h3>設定邊權重（可編輯）</h3><div id="weightList" class="weight-list"></div></div><div class="section"><div class="buttons"><button class="button" id="resetBtn">重置</button><button class="button primary" id="stepBtn">下一步</button><button class="button" id="playBtn">播放</button></div><div id="status" class="status">請按「下一步」或「播放」開始演示。</div></div></aside>
+</div>
+<section class="card queue-card"><div class="card-head"><h2>優先佇列（最小在下）</h2><span id="queueInfo" style="font-size:12px;color:var(--muted)"></span></div><div id="queue" class="queue"></div></section>
+</main>
+<script>
+const raw=[['A','B'],['A','C'],['B','D'],['B','C'],['D','C'],['D','E'],['D','F'],['F','E'],['C','E']];
+const defaultWeights=[2,3,3,4,2,6,7,5,6];
+let edges=raw.map(([a,b],i)=>({a,b,w:defaultWeights[i],state:'waiting'}));
+let sorted=[],index=-1,parent={},timer=null,accepted=0,rejected=0,total=0;
+const svg=document.getElementById('svg'),queue=document.getElementById('queue');
+const pos={A:[150,95],B:[300,105],C:[300,240],D:[470,95],E:[470,260],F:[610,175]};
+function ns(name,attrs={},text=''){const n=document.createElementNS('http://www.w3.org/2000/svg',name);for(const k in attrs)n.setAttribute(k,attrs[k]);if(text)n.textContent=text;return n}
+function draw(){svg.innerHTML='';for(const e of edges){const [x1,y1]=pos[e.a],[x2,y2]=pos[e.b];const line=ns('line',{x1,y1,x2,y2,class:'edge-line '+(e.state==='accept'?'accept':e.state==='reject'?'reject':e.state==='current'?'current':'')});svg.appendChild(line);const mx=(x1+x2)/2,my=(y1+y2)/2;svg.appendChild(ns('rect',{x:mx-13,y:my-13,width:26,height:26,rx:13,class:'weight'}));const t=ns('text',{x:mx,y:my,class:'weight','stroke':'none'});t.textContent=e.w;svg.appendChild(t)}for(const [v,p] of Object.entries(pos)){const g=ns('g',{class:'node'});g.appendChild(ns('circle',{cx:p[0],cy:p[1],r:24}));g.appendChild(ns('text',{x:p[0],y:p[1]} ,v));svg.appendChild(g)}}
+function find(x){while(parent[x]!==x){parent[x]=parent[parent[x]];x=parent[x]}return x}function unite(a,b){a=find(a);b=find(b);if(a===b)return false;parent[b]=a;return true}
+function reset(){clearInterval(timer);timer=null;edges.forEach(e=>e.state='waiting');index=-1;accepted=0;rejected=0;total=0;for(const v of Object.keys(pos))parent[v]=v;sorted=[...edges].sort((a,b)=>a.w-b.w||edges.indexOf(a)-edges.indexOf(b));syncQueue();draw();updateStats();document.getElementById('stepLabel').textContent='準備開始';document.getElementById('status').textContent='請按「下一步」或「播放」開始演示。';document.getElementById('playBtn').textContent='播放'}
+function syncQueue(){
+  queue.innerHTML='';
+  for(let i=0;i<sorted.length;i++){
+    const e=sorted[i];
+    const ticket=document.createElement('div');
+    ticket.className='ticket '+e.state;
+    const detail=e.state==='accept'?'已納入 MST':e.state==='reject'?'形成環，丟棄':'尚未處理';
+    const badge=e.state==='waiting'?'待處理':e.state==='accept'?'拿出':'丟去';
+    ticket.innerHTML=`<b>${e.w}</b><span>${e.a}${e.b}</span><span>${detail}</span><span class="badge">${badge}</span>`;
+    queue.appendChild(ticket);
+  }
+}
+function updateStats(){document.getElementById('edgeCount').textContent=edges.length;document.getElementById('treeCount').textContent=accepted;document.getElementById('totalWeight').textContent=total;document.getElementById('rejectCount').textContent=rejected;document.getElementById('queueInfo').textContent=`已處理 ${index+1} / ${sorted.length} 張票`}
+function step(){if(index>=sorted.length-1){if(timer)clearInterval(timer);document.getElementById('playBtn').textContent='播放';document.getElementById('status').textContent=`演示完成：MST 共 ${accepted} 邊，總權重 ${total}。`;document.getElementById('stepLabel').textContent='演示完成';return}edges.forEach(e=>{if(e.state==='current')e.state='waiting'});const e=sorted[++index];e.state='current';syncQueue();draw();const result=unite(e.a,e.b);if(result){accepted++;total+=e.w;e.state='accept';document.getElementById('status').textContent=`拿出 ${e.a}${e.b}（權重 ${e.w}）：兩端不連通，納入最小生成樹。`;}else{rejected++;e.state='reject';document.getElementById('status').textContent=`拿出 ${e.a}${e.b}（權重 ${e.w}）：加入會形成環，票丟棄。`;}document.getElementById('stepLabel').textContent=`第 ${index+1} 步｜${e.a}-${e.b}`;syncQueue();draw();updateStats();if(accepted===5){if(timer)clearInterval(timer);document.getElementById('playBtn').textContent='播放'}}
+function buildWeightInputs(){const list=document.getElementById('weightList');list.innerHTML='';edges.forEach((e,i)=>{const label=document.createElement('label');label.textContent=`${e.a}${e.b} 邊`;label.htmlFor='w'+i;const input=document.createElement('input');input.id='w'+i;input.type='number';input.min='1';input.max='99';input.value=e.w;input.addEventListener('input',()=>{e.w=Math.max(1,parseInt(input.value)||1);reset()});list.append(label,input)})}
+document.getElementById('resetBtn').onclick=reset;document.getElementById('stepBtn').onclick=step;document.getElementById('playBtn').onclick=()=>{if(timer){clearInterval(timer);timer=null;document.getElementById('playBtn').textContent='播放';return}document.getElementById('playBtn').textContent='暫停';timer=setInterval(step,900)};
+buildWeightInputs();reset();draw();
+</script>
+</body>
+</html>

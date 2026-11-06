@@ -48,3 +48,7 @@ g++ -std=c++17 -Wall -Wextra -pedantic server.cpp -o waitlist-server.exe -lws2_3
 ## 圖形與 BFS／DFS 視覺化
 
 開啟 `graph.html` 可查看包含 A–F 六個頂點的無向圖，並輸入起點逐步演示廣度優先搜尋（BFS）或深度優先搜尋（DFS）。使用圖形下方的播放控制逐步前進、後退或自動播放；下方思考流程會同步顯示目前走訪狀態、佇列或遞迴路徑與各步說明。
+
+## Kruskal 最小生成樹視覺化
+
+開啟 `mst.html` 或啟動 C++ 伺服器後瀏覽 `http://127.0.0.1:8080/mst.html`。頁面以 A–F 六個頂點與 AB、AC、BD、BC、DC、DE、DF、FE、CE 九條邊演示 Kruskal 演算法；權重可直接編輯，並可逐步或自動播放拿取、納入與丟棄邊的票。右側顯示邊數、MST 邊數、總權重與丟棄票數；下方佇列依權重排列，最小值顯示在最下方。
