@@ -261,7 +261,16 @@ void handleClient(SOCKET client, std::vector<Guest>& guests, int& autoGuestCount
     }
     body.resize(contentLength);
 
-    if (method == "GET" && path == "/mst.html") {
+    if (method == "GET" && path == "/dijkstra.html") {
+        std::ifstream page("dijkstra.html", std::ios::binary);
+        if (!page) {
+            respond(client, 500, "Internal Server Error", "text/plain; charset=utf-8", "Could not open dijkstra.html");
+            return;
+        }
+        std::ostringstream html;
+        html << page.rdbuf();
+        respond(client, 200, "OK", "text/html; charset=utf-8", html.str());
+    } else if (method == "GET" && path == "/mst.html") {
         std::ifstream page("mst.html", std::ios::binary);
         if (!page) {
             respond(client, 500, "Internal Server Error", "text/plain; charset=utf-8", "Could not open mst.html");

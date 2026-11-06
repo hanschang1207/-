@@ -52,3 +52,7 @@ g++ -std=c++17 -Wall -Wextra -pedantic server.cpp -o waitlist-server.exe -lws2_3
 ## Kruskal 最小生成樹視覺化
 
 開啟 `mst.html` 或啟動 C++ 伺服器後瀏覽 `http://127.0.0.1:8080/mst.html`。頁面以 A–F 六個頂點與 AB、AC、BD、BC、DC、DE、DF、FE、CE 九條邊演示 Kruskal 演算法；權重可直接編輯，並可逐步或自動播放拿取、納入與丟棄邊的票。右側顯示邊數、MST 邊數、總權重與丟棄票數；下方佇列依權重排列，最小值顯示在最下方。
+
+## Dijkstra A 到 F 最短路徑視覺化
+
+開啟 `dijkstra.html` 或啟動 C++ 伺服器後瀏覽 `http://127.0.0.1:8080/dijkstra.html`。頁面以同一組 A–F 圖形演示 Dijkstra 最短路徑演算法，逐步取出頂點、鬆弛鄰點並跳過過期佇列項目。右側統示取出數量、預期跳過次數、鬆弛成功次數與已完成頂點數；頁面底部說明為何適合使用此方法。
